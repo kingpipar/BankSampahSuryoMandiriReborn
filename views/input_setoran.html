@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Setoran | Bank Sampah Digital</title>
+    <link rel="stylesheet" href="./src/css/output.css">
+    <script src="./src/lib/jspdf.umd.min.js"></script>
+    <script src="./src/lib/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at top left, #d1fae5 0%, transparent 20%),
+                radial-gradient(circle at bottom right, #dcfce7 0%, transparent 25%),
+                #f8fafc;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #10b981, #22c55e);
+            border-radius: 20px;
+        }
+        .glass {
+            background: rgba(255, 255, 255, .72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+        .table-row {
+            transition: all .25s ease;
+        }
+        .table-row:hover {
+            background: #f8fafc;
+        }
+        @media(max-width:768px) {
+            aside {
+                display: none;
+            }
+            .mobile-padding {
+                padding: 20px !important;
+            }
+            .mobile-title {
+                font-size: 30px !important;
+            }
+            header {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased selection:bg-emerald-200 selection:text-emerald-900">
+    <div class="flex h-screen overflow-hidden">
+        <div id="sidebar-container"></div>
+        <script>
+            fetch('sidebar.html').then(r => r.text()).then(html => {
+                document.getElementById('sidebar-container').innerHTML = html;
+            });
+        </script>
+        
+        <main class="flex-1 h-full overflow-y-auto relative scroll-smooth">
+            <header
+                class="glass border-b border-white/40 px-10 py-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900 mobile-title">Input Setoran Sampah</h1>
+                    <p class="text-slate-500 font-medium text-sm mt-1 flex items-center gap-2">
+                        🚚 Catat setoran harian nasabah Bank Sampah Suryo Mandiri
+                    </p>
+                </div>
+            </header>
+
+            <div class="p-8 md:p-10 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mobile-padding">
+                
+                <!-- FORM INPUT SETORAN -->
+                <div class="lg:col-span-1 bg-white/85 backdrop-blur-xl border border-white/40 rounded-[28px] p-6 shadow-sm space-y-5 h-fit">
+                    <h2 id="form-title" class="text-xl font-bold text-slate-800">Form Setoran Harian</h2>
+                    
+                    <!-- TAB SETORAN TYPE -->
+                    <div class="flex bg-slate-100 rounded-xl p-1 mb-2">
+                        <button type="button" id="tab-pengepul" onclick="setTujuanSetoran('PENGEPUL')"
+                            class="flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm">
+                            🚚 Pengepul
+                        </button>
+                        <button type="button" id="tab-warga" onclick="setTujuanSetoran('WARGA')"
+                            class="flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800">
+                            🛍️ Dibeli Warga
+                        </button>
+                    </div>
+                    <input type="hidden" id="tujuan-setoran" value="PENGEPUL">
+
+                    <form id="form-setoran" onsubmit="simpanSetoran(event)">
+                        <input type="hidden" id="edit-id">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Nasabah</label>
+                                <select id="input-nasabah" required
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                                    <option value="" disabled selected>Pilih nama nasabah...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Jenis Sampah</label>
+                                <select id="input-sampah" required
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                                    <option value="" disabled selected>Pilih jenis sampah...</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Berat (KG/BJ)</label>
+                                    <input type="number" id="input-berat" step="0.01" min="0.01" required placeholder="0.00"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Tanggal</label>
+                                    <input type="date" id="input-tanggal" required
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                                </div>
+                            </div>
+                            <div id="wrapper-keterangan">
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Keterangan (opsional)</label>
+                                <input type="text" id="input-keterangan" placeholder="Misal: Kondisi bersih, kardus tebal..."
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all">
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="mt-6 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2">
+                            💾 Simpan Setoran
+                        </button>
+                    </form>
+                </div>
+ 
+                <!-- HISTORY / TABEL SETORAN -->
+                <div class="lg:col-span-2 bg-white/80 backdrop-blur-xl border border-white/40 rounded-[28px] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-6 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
+                        <div class="flex flex-wrap items-center gap-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-800">Riwayat Setoran Harian</h2>
+                                <p class="text-xs text-slate-500 mt-1">Daftar setoran masuk hari ini & sebelumnya</p>
+                            </div>
+                            
+                            <!-- TAB FILTER RIWAYAT -->
+                            <div class="flex bg-slate-100 rounded-xl p-1 shrink-0 lg:ml-2">
+                                <button type="button" id="filter-tab-pengepul" onclick="setTujuanFilter('PENGEPUL')"
+                                    class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm">
+                                    🚚 Pengepul
+                                </button>
+                                <button type="button" id="filter-tab-warga" onclick="setTujuanFilter('WARGA')"
+                                    class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800">
+                                    🛍️ Dibeli Warga
+                                </button>
+                            </div>
+                            <input type="hidden" id="filter-tujuan" value="PENGEPUL">
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs font-bold text-slate-500">Filter Bulan:</label>
+                                <input type="month" id="filter-riwayat-periode" onchange="loadHistory()"
+                                    class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all">
+                                <button onclick="clearFilter()" class="text-xs text-slate-400 hover:text-emerald-600 font-bold transition-colors ml-1">Semua</button>
+                            </div>
+                            <button id="btn-cetak-penjualan" onclick="cetakLaporanPengepul()" style="display: none;"
+                                class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl transition-all text-xs flex items-center gap-2">
+                                🖨️ Cetak
+                            </button>
+                            <button onclick="loadHistory()"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl transition-all text-xs flex items-center gap-2">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50/50 border-b border-slate-100">
+                                <tr>
+                                    <th class="py-4 px-5 font-semibold text-xs text-slate-600 text-center w-12">No</th>
+                                    <th class="py-4 px-5 font-semibold text-xs text-slate-600 w-28">Tanggal</th>
+                                    <th class="py-4 px-5 font-semibold text-xs text-slate-600 w-48">Nasabah</th>
+                                    <th class="py-4 px-5 font-semibold text-xs text-slate-600">Daftar Sampah & Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body" class="divide-y divide-slate-100/60 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="./src/js/notif-badge.js"></script>
+    <script src="./src/lib/sweetalert2.all.min.js"></script>
+    <script>
+        function clearFilter() {
+            document.getElementById('filter-riwayat-periode').value = '';
+            loadHistory();
+        }
+        function setTujuanFilter(tujuan) {
+            document.getElementById('filter-tujuan').value = tujuan;
+            const tabPengepul = document.getElementById('filter-tab-pengepul');
+            const tabWarga = document.getElementById('filter-tab-warga');
+            const btnCetak = document.getElementById('btn-cetak-penjualan');
+
+            if (tujuan === 'PENGEPUL') {
+                tabPengepul.className = "px-4 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
+                tabWarga.className = "px-4 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                if (btnCetak) btnCetak.style.display = 'none';
+            } else {
+                tabPengepul.className = "px-4 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                tabWarga.className = "px-4 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
+                if (btnCetak) btnCetak.style.display = 'flex';
+            }
+            loadHistory();
+        }
+        function setTujuanSetoran(tujuan) {
+            document.getElementById('tujuan-setoran').value = tujuan;
+            const tabPengepulEl = document.getElementById('tab-pengepul');
+            const tabWargaEl = document.getElementById('tab-warga');
+            const inputKeterangan = document.getElementById('input-keterangan');
+            const wrapperKeterangan = document.getElementById('wrapper-keterangan');
+
+            if (tujuan === 'PENGEPUL') {
+                tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
+                tabWargaEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                wrapperKeterangan.style.display = 'block';
+            } else {
+                tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                tabWargaEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
+                wrapperKeterangan.style.display = 'none'; // Keterangan disembunyikan karena otomatis diset DIBELI WARGA
+                inputKeterangan.value = '';
+            }
+            // Otomatis ubah filter riwayat agar sinkron
+            setTujuanFilter(tujuan);
+        }
+
+        async function loadDropdowns() {
+            try {
+                // Populate Nasabah Dropdown
+                const resNasabah = await fetch('/api/nasabah');
+                const nasabah = await resNasabah.json();
+                const selectNasabah = document.getElementById('input-nasabah');
+                selectNasabah.innerHTML = '<option value="" disabled selected>Pilih nama nasabah...</option>';
+                nasabah.sort((a, b) => a.nama.localeCompare(b.nama)).forEach(n => {
+                    const addr = n.rt && n.rw ? ` (RT ${n.rt}/RW ${n.rw})` : '';
+                    selectNasabah.innerHTML += `<option value="${n.id}">${n.nama}${addr}</option>`;
+                });
+
+                // Populate Sampah Dropdown
+                const resHarga = await fetch('/api/harga');
+                const harga = await resHarga.json();
+                const selectSampah = document.getElementById('input-sampah');
+                selectSampah.innerHTML = '<option value="" disabled selected>Pilih jenis sampah...</option>';
+                harga.sort((a, b) => a.nama_sampah.localeCompare(b.nama_sampah)).forEach(h => {
+                    selectSampah.innerHTML += `<option value="${h.id}">${h.nama_sampah} (Rp ${h.harga}/${(h.satuan || 'kg').toLowerCase()})</option>`;
+                });
+            } catch (err) {
+                console.error('Gagal memuat dropdown:', err);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const filterPeriode = document.getElementById('filter-riwayat-periode').value;
+                const url = filterPeriode ? `/api/detail-setoran?periode=${filterPeriode}` : '/api/detail-setoran';
+                const res = await fetch(url);
+                const data = await res.json();
+                const tbody = document.getElementById('history-body');
+                tbody.innerHTML = '';
+
+                // Filter berdasarkan Tab Pengepul / Dibeli Warga
+                const filterTujuan = document.getElementById('filter-tujuan').value;
+                const filteredData = data.filter(item => {
+                    if (filterTujuan === 'WARGA') {
+                        return item.keterangan === 'DIBELI WARGA';
+                    } else {
+                        return item.keterangan !== 'DIBELI WARGA';
+                    }
+                });
+
+                if (filteredData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-500">Tidak ada riwayat setoran ${filterTujuan === 'WARGA' ? 'yang dibeli warga' : 'pengepul'} untuk periode ini.</td></tr>`;
+                    return;
+                }
+
+                // Pengelompokan harian berdasarkan tanggal + id_nasabah (Opsi A)
+                const groups = {};
+                filteredData.forEach(item => {
+                    const dateStr = item.tanggal ? item.tanggal.slice(0, 10) : 'no-date';
+                    const key = `${dateStr}_${item.id_nasabah}`;
+                    if (!groups[key]) {
+                        groups[key] = {
+                            tanggal: item.tanggal,
+                            id_nasabah: item.id_nasabah,
+                            nama_nasabah: item.nama_nasabah,
+                            items: []
+                        };
+                    }
+                    groups[key].items.push(item);
+                });
+
+                const currentMonthStr = new Date().toISOString().slice(0, 7);
+                const sortedGroups = Object.values(groups).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+                sortedGroups.forEach((group, index) => {
+                    const dateFormatted = group.tanggal ? new Date(group.tanggal).toLocaleDateString('id-ID') : '-';
+                    
+                    let itemsHtml = '<ul class="space-y-1.5">';
+                    group.items.forEach(item => {
+                        const weight = parseFloat(item.jumlah_kg).toFixed(2);
+                        const labelWarga = item.keterangan === 'DIBELI WARGA' ? ' <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1.5">Warga</span>' : '';
+                        
+                        itemsHtml += `
+                            <li class="flex items-center justify-between text-xs text-slate-700 font-medium">
+                                <span>• ${item.nama_sampah} (${weight} ${(item.satuan || 'KG').toLowerCase()})${labelWarga}</span>
+                                <div class="flex items-center gap-1.5 ml-4 shrink-0">
+                                    <button onclick="editSetoran(${item.id}, ${item.id_nasabah}, ${item.id_harga_sampah}, ${item.jumlah_kg}, '${item.tanggal ? item.tanggal.slice(0, 10) : ''}', '${(item.keterangan || '').replace(/'/g, "\\'")}', '${item.keterangan === 'DIBELI WARGA' ? 'WARGA' : 'PENGEPUL'}')" class="text-amber-500 hover:text-amber-600 font-bold text-[11px] transition-colors">✏️ Edit</button>
+                                    <span class="text-slate-300">|</span>
+                                    <button onclick="hapusSetoran(${item.id})" class="text-rose-500 hover:text-rose-600 font-bold text-[11px] transition-colors">🗑️ Hapus</button>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    itemsHtml += '</ul>';
+
+                    tbody.innerHTML += `
+                    <tr class="table-row">
+                        <td class="py-4 px-5 text-slate-500 font-medium text-center text-sm">${index + 1}</td>
+                        <td class="py-4 px-5 text-slate-600 text-xs font-semibold">${dateFormatted}</td>
+                        <td class="py-4 px-5 font-bold text-slate-800 text-sm">
+                            <a href="detail_nasabah.html?id=${group.id_nasabah}" class="hover:text-emerald-600 hover:underline transition-colors">${group.nama_nasabah}</a>
+                        </td>
+                        <td class="py-4 px-5">${itemsHtml}</td>
+                    </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error('Gagal memuat riwayat:', err);
+            }
+        }
+
+        async function simpanSetoran(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const id_nasabah = document.getElementById('input-nasabah').value;
+            const id_harga_sampah = document.getElementById('input-sampah').value;
+            const jumlah_kg = document.getElementById('input-berat').value;
+            const tanggal = document.getElementById('input-tanggal').value;
+            
+            let keterangan = document.getElementById('input-keterangan').value.trim();
+            const tujuan = document.getElementById('tujuan-setoran').value;
+            if (tujuan === 'WARGA') {
+                keterangan = 'DIBELI WARGA';
+            }
+
+            const payload = {
+                id_nasabah: parseInt(id_nasabah),
+                id_harga_sampah: parseInt(id_harga_sampah),
+                jumlah_kg: parseFloat(jumlah_kg),
+                tanggal,
+                keterangan
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/detail-setoran/${id}` : '/api/detail-setoran';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: id ? 'Setoran harian berhasil diperbarui.' : 'Setoran harian berhasil ditambahkan.',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981'
+                    });
+                    document.getElementById('edit-id').value = '';
+                    document.getElementById('input-berat').value = '';
+                    document.getElementById('input-keterangan').value = '';
+                    document.getElementById('input-tanggal').value = new Date().toISOString().slice(0, 10);
+                    setTujuanSetoran(tujuan);
+                    setTujuanFilter(tujuan); // Sinkronisasi filter riwayat dengan input yang baru saja disimpan!
+                    document.getElementById('form-title').innerText = 'Form Setoran Harian';
+                    loadHistory();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Gagal menyimpan setoran: ' + (err.message || res.statusText),
+                        icon: 'error',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Tidak bisa terhubung ke server.',
+                    icon: 'error',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+        }
+
+        function editSetoran(id, id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan, tujuan) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('input-nasabah').value = id_nasabah;
+            document.getElementById('input-sampah').value = id_harga_sampah;
+            document.getElementById('input-berat').value = jumlah_kg;
+            document.getElementById('input-tanggal').value = tanggal ? tanggal : new Date().toISOString().slice(0, 10);
+            document.getElementById('input-keterangan').value = keterangan === 'DIBELI WARGA' ? '' : keterangan;
+            setTujuanSetoran(tujuan || 'PENGEPUL');
+            document.getElementById('form-title').innerText = 'Form Edit Setoran';
+        }
+
+        function hapusSetoran(id) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: 'Data setoran harian ini akan dihapus secara permanen!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`/api/detail-setoran/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: 'Data setoran harian berhasil dihapus.',
+                                icon: 'success',
+                                confirmButtonColor: '#10b981'
+                            });
+                            loadHistory();
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: 'Gagal menghapus data setoran.',
+                                icon: 'error',
+                                confirmButtonColor: '#10b981'
+                            });
+                        }
+                    } catch (err) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Tidak bisa terhubung ke server.',
+                            icon: 'error',
+                            confirmButtonColor: '#10b981'
+                        });
+                    }
+                }
+            });
+        }
+
+        async function cetakLaporanPengepul() {
+            let periode = document.getElementById('filter-riwayat-periode').value;
+            if (!periode) {
+                const now = new Date();
+                periode = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            try {
+                const response = await fetch(`/api/setoran-pengepul?periode=${periode}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    return Swal.fire({
+                        title: 'Data Kosong',
+                        text: `Tidak ada data setoran penjualan untuk periode ${periode}`,
+                        icon: 'info',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+
+                let transactionDate = data[0].periode;
+                const d = new Date(transactionDate);
+                const monthsIndo = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+                let formattedPeriode = "";
+                if (!isNaN(d.getTime())) {
+                    formattedPeriode = String(d.getDate()).padStart(2, '0') + ' ' + monthsIndo[d.getMonth()] + ' ' + d.getFullYear();
+                } else {
+                    const [y, m] = periode.split('-');
+                    formattedPeriode = monthsIndo[parseInt(m) - 1] + ' ' + y;
+                }
+
+                const pengepulItems = [];
+                const wargaItems = [];
+                data.forEach(item => {
+                    if (item.keterangan && item.keterangan.toUpperCase().trim() === 'DIBELI WARGA') {
+                        wargaItems.push(item);
+                    } else {
+                        pengepulItems.push(item);
+                    }
+                });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.text('BANK SAMPAH SURYA MANDIRI REBORN - RW.10 SURYODININGRATAN YOGYAKARTA', 14, 18);
+                doc.text(`PERIODE: ${formattedPeriode}`, 14, 23);
+                doc.text('SETORAN PENGEPUL & WARGA', 14, 28);
+
+                const rows = [];
+                let rowCounter = 1;
+
+                pengepulItems.forEach(item => {
+                    rows.push([
+                        rowCounter++,
+                        item.nama_sampah.toUpperCase(),
+                        parseFloat(item.jumlah_kg).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                        item.satuan || 'KG',
+                        parseInt(item.harga_satuan || 0).toLocaleString('id-ID'),
+                        parseInt(item.total || 0).toLocaleString('id-ID'),
+                        item.keterangan || ''
+                    ]);
+                });
+
+                const totalPengepul = pengepulItems.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+                rows.push([
+                    { content: 'TOTAL:', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPengepul.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                rows.push([
+                    { content: 'TERIMA DARI PENGEPUL', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPengepul.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                rows.push([
+                    { content: 'LAIN-LAIN:', colSpan: 7 }
+                ]);
+
+                wargaItems.forEach(item => {
+                    rows.push([
+                        rowCounter++,
+                        item.nama_sampah.toUpperCase(),
+                        parseFloat(item.jumlah_kg).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                        item.satuan || 'KG',
+                        parseInt(item.harga_satuan || 0).toLocaleString('id-ID'),
+                        parseInt(item.total || 0).toLocaleString('id-ID'),
+                        item.keterangan || ''
+                    ]);
+                });
+
+                const totalWarga = wargaItems.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+                const totalPenjualan = totalPengepul + totalWarga;
+                rows.push([
+                    { content: 'TOTAL PENJUALAN SAMPAH', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPenjualan.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                doc.autoTable({
+                    startY: 32,
+                    head: [['NO.', 'NAMA BARANG', 'JUMLAH', 'SATUAN', 'HARGA', 'TOTAL', 'KETERANGAN']],
+                    body: rows,
+                    theme: 'grid',
+                    styles: {
+                        textColor: [0, 0, 0],
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        fontSize: 9,
+                        font: 'Helvetica'
+                    },
+                    headStyles: {
+                        fillColor: false,
+                        textColor: [0, 0, 0],
+                        fontStyle: 'bold',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    columnStyles: {
+                        0: { halign: 'center' },
+                        2: { halign: 'right' },
+                        3: { halign: 'center' },
+                        4: { halign: 'right' },
+                        5: { halign: 'right' }
+                    },
+                    didParseCell: function (cellData) {
+                        const label = cellData.row.cells[1] ? cellData.row.cells[1].text : '';
+                        const firstCellText = cellData.row.cells[0] ? cellData.row.cells[0].text : '';
+                        if (label === 'TOTAL:' || label === 'TERIMA DARI PENGEPUL' || firstCellText === 'LAIN-LAIN:' || firstCellText === 'TOTAL PENJUALAN SAMPAH') {
+                            cellData.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+
+                const finalY = doc.autoTable.previous.finalY || 32;
+                const sigY = finalY + 15;
+
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+
+                doc.text('DIREKTUR BS SMR RW 10', 45, sigY, { align: 'center' });
+                doc.text('(                                         )', 45, sigY + 28, { align: 'center' });
+
+                doc.text(`YOGYAKARTA, ${formattedPeriode}`, 155, sigY, { align: 'center' });
+                doc.text('BENDAHARA:', 155, sigY + 5, { align: 'center' });
+                doc.text('(                                         )', 155, sigY + 28, { align: 'center' });
+
+                const pdfUrl = doc.output('bloburl');
+                window.open(pdfUrl, '_blank');
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Gagal memproses cetak laporan penjualan.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('input-tanggal').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('filter-riwayat-periode').value = new Date().toISOString().slice(0, 7);
+            loadDropdowns();
+            loadHistory();
+        });
+    </script>
+</body>
+
+</html>

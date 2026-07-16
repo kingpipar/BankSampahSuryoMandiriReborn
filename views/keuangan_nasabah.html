@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keuangan Warga | Bank Sampah Digital</title>
+    <link rel="stylesheet" href="./src/css/output.css">
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at top left, #d1fae5 0%, transparent 20%),
+                radial-gradient(circle at bottom right, #dcfce7 0%, transparent 25%),
+                #f8fafc;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #10b981, #22c55e);
+            border-radius: 20px;
+        }
+        .glass {
+            background: rgba(255, 255, 255, .72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+        .table-row {
+            transition: all .2s ease;
+        }
+        .table-row:hover {
+            background: #f8fafc;
+        }
+        .animate-fade {
+            animation: fade .4s ease;
+        }
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            } to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media(max-width:768px) {
+            aside {
+                display: none;
+            }
+            .mobile-padding {
+                padding: 20px !important;
+            }
+            header {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <div id="sidebar-container"></div>
+        <script>
+            fetch('sidebar.html').then(r => r.text()).then(html => {
+                document.getElementById('sidebar-container').innerHTML = html;
+            });
+        </script>
+
+        <main class="flex-1 h-full overflow-y-auto relative scroll-smooth">
+
+            <header class="glass border-b border-white/40 px-10 py-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900">Keuangan Warga</h1>
+                    <p class="text-slate-500 font-medium text-sm mt-1">💳 Kelola tabungan bulanan, penarikan saldo, dan status kas nasabah</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <label class="text-sm font-bold text-slate-600">Periode:</label>
+                    <input type="month" id="filter-periode"
+                        class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-sm"
+                        onchange="loadKeuangan()">
+                </div>
+            </header>
+
+            <div class="p-8 md:p-10 max-w-[1400px] mx-auto space-y-6 mobile-padding">
+                
+                <!-- SUMMARY STATS CARD -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Total Saldo Awal</span>
+                        <h4 id="summary-awal" class="text-lg font-black text-slate-800 mt-2">Rp 0</h4>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Total Setoran Kotor</span>
+                        <h4 id="summary-kotor" class="text-lg font-black text-emerald-600 mt-2">Rp 0</h4>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Total Admin (10%)</span>
+                        <h4 id="summary-admin" class="text-lg font-black text-rose-500 mt-2">Rp 0</h4>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Total Penarikan</span>
+                        <h4 id="summary-ambil" class="text-lg font-black text-amber-500 mt-2">Rp 0</h4>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Total Saldo Akhir</span>
+                        <h4 id="summary-akhir" class="text-lg font-black text-blue-600 mt-2">Rp 0</h4>
+                    </div>
+                </div>
+
+                <!-- TABLE CARD -->
+                <div class="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[28px] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-slate-800">Tabel Rekapitulasi Kas Warga</h2>
+                        <div class="flex gap-3">
+                            <button onclick="cetakLaporanPdf()"
+                                class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-3 rounded-xl hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-sm flex items-center gap-2">
+                                🖨️ Cetak Laporan PDF
+                            </button>
+                            <button onclick="simpanSemuaRekap()"
+                                class="bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold px-6 py-3 rounded-xl hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-sm flex items-center gap-2">
+                                💾 Simpan Semua Rekap
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50/50 border-b border-slate-100">
+                                <tr>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-center w-12">No</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500">Nama Nasabah</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-center">Wilayah</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-right">Saldo Awal</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-right">Setoran Kotor</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-right">Pot. Admin 10%</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-center w-36">Status</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-center w-40">Jumlah Ambil</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-right">Saldo Akhir</th>
+                                    <th class="py-5 px-5 font-semibold text-xs uppercase text-slate-500 text-center w-24">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-keuangan" class="divide-y divide-slate-100/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="./src/js/notif-badge.js"></script>
+    <script src="./src/lib/sweetalert2.all.min.js"></script>
+    <script>
+        // Set default value filter periode ke bulan berjalan
+        document.getElementById('filter-periode').value = new Date().toISOString().slice(0, 7);
+
+        let dataKeuangan = [];
+
+        async function loadKeuangan() {
+            const periode = document.getElementById('filter-periode').value;
+            if (!periode) return;
+
+            try {
+                const res = await fetch(`/api/setoran-nasabah?periode=${periode}`);
+                dataKeuangan = await res.json();
+                renderTabel();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Gagal memuat data keuangan warga.', 'error');
+            }
+        }
+
+        function renderTabel() {
+            const tbody = document.getElementById('tabel-keuangan');
+            tbody.innerHTML = '';
+
+            if (dataKeuangan.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="p-10 text-center text-slate-500">Tidak ada data nasabah pada periode ini.</td></tr>';
+                updateSummary();
+                return;
+            }
+
+            // Pengelompokan nasabah
+            const groups = {};
+            dataKeuangan.forEach(row => {
+                const isRW10 = row.rw && row.rw.toString().trim() === '10';
+                const rt = row.rt ? row.rt.toString().trim() : '';
+                
+                let groupName = 'Lain-Lain';
+                if (isRW10 && rt) {
+                    groupName = `RT ${rt}`;
+                }
+                
+                if (!groups[groupName]) {
+                    groups[groupName] = [];
+                }
+                groups[groupName].push(row);
+            });
+
+            // Urutkan nama grup (RT numerik dahulu, Lain-Lain di paling bawah)
+            const groupNames = Object.keys(groups).sort((a, b) => {
+                if (a === 'Lain-Lain') return 1;
+                if (b === 'Lain-Lain') return -1;
+                const numA = parseInt(a.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+
+            groupNames.forEach(groupName => {
+                // Sort secara alfabetis nama warga dalam grup, letakkan akun kas/khusus paling bawah
+                groups[groupName].sort((a, b) => {
+                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                    const isASpecial = specialNames.includes(a.nama_nasabah);
+                    const isBSpecial = specialNames.includes(b.nama_nasabah);
+                    if (isASpecial && !isBSpecial) return 1;
+                    if (!isASpecial && isBSpecial) return -1;
+                    if (isASpecial && isBSpecial) {
+                        return specialNames.indexOf(a.nama_nasabah) - specialNames.indexOf(b.nama_nasabah);
+                    }
+                    return a.nama_nasabah.localeCompare(b.nama_nasabah);
+                });
+
+                // Sisipkan baris header pembatas RT/Kelompok
+                tbody.innerHTML += `
+                    <tr class="bg-slate-100/50 font-bold text-slate-700 text-xs uppercase tracking-wider select-none">
+                        <td colspan="10" class="py-3 px-5 border-y border-slate-200/60">${groupName} — ${groups[groupName].length} Nasabah</td>
+                    </tr>
+                `;
+
+                let idx = 1;
+                groups[groupName].forEach(row => {
+                    const saldoAwal = parseFloat(row.saldo_awal || 0);
+                    const saldoKotor = parseFloat(row.saldo_kotor || 0);
+                    const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+                    const adminCut = isKasBankSampah ? 0 : saldoKotor * 0.10;
+                    const netSetoran = isKasBankSampah ? saldoKotor : saldoKotor * 0.90;
+                    
+                    const currentStatus = row.status || 'DITABUNG';
+                    const currentAmbil = parseFloat(row.jumlah_ambil || 0);
+                    const saldoAkhir = saldoAwal + netSetoran - currentAmbil;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-row';
+                    tr.dataset.id = row.id_nasabah;
+
+                    const rtVal = row.rt && row.rw ? `RT ${row.rt}/RW ${row.rw}` : (row.keterangan_wilayah || '-');
+
+                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                    const isSpecial = specialNames.includes(row.nama_nasabah);
+                    const noDisplay = isSpecial ? '#' : idx++;
+
+                    tr.innerHTML = `
+                        <td class="py-4 px-5 text-slate-500 font-bold text-center text-sm">${noDisplay}</td>
+                        <td class="py-4 px-5 font-bold text-slate-800 text-sm">
+                            <a href="detail_nasabah.html?id=${row.id_nasabah}" class="hover:text-emerald-600 hover:underline transition-colors">${row.nama_nasabah}</a>
+                        </td>
+                        <td class="py-4 px-5 text-slate-500 text-xs font-semibold text-center">${rtVal}</td>
+                        <td class="py-4 px-5 text-right font-medium text-slate-700 text-sm">Rp ${Math.round(saldoAwal).toLocaleString('id-ID')}</td>
+                        <td class="py-4 px-5 text-right font-medium text-emerald-600 text-sm">Rp ${Math.round(saldoKotor).toLocaleString('id-ID')}</td>
+                        <td class="py-4 px-5 text-right font-medium text-rose-500 text-sm">Rp ${Math.round(adminCut).toLocaleString('id-ID')}</td>
+                        <td class="py-4 px-5 text-center">
+                            <select onchange="updateRowStatus(${row.id_nasabah}, this.value)"
+                                class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all">
+                                <option value="DITABUNG" ${currentStatus === 'DITABUNG' ? 'selected' : ''}>DITABUNG</option>
+                                <option value="DIAMBIL" ${currentStatus === 'DIAMBIL' ? 'selected' : ''}>DIAMBIL</option>
+                            </select>
+                        </td>
+                        <td class="py-4 px-5 text-center">
+                            <div class="flex items-center gap-1.5 justify-center">
+                                <span class="text-xs text-slate-400 font-medium">Rp</span>
+                                <input type="number" value="${Math.round(currentAmbil)}"
+                                    ${currentStatus === 'DITABUNG' ? 'disabled' : ''}
+                                    oninput="updateRowAmbil(${row.id_nasabah}, this.value)"
+                                    class="w-28 bg-slate-50 disabled:bg-slate-100/60 disabled:text-slate-400 border border-slate-200 rounded-lg px-2 py-1 text-right text-xs font-bold text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all">
+                            </div>
+                        </td>
+                        <td class="py-4 px-5 text-right font-bold text-blue-600 text-sm">Rp ${Math.round(saldoAkhir).toLocaleString('id-ID')}</td>
+                        <td class="py-4 px-5 text-center">
+                            <button onclick="simpanBarisRekap(${row.id_nasabah})"
+                                class="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors">
+                                💾 Simpan
+                            </button>
+                        </td>
+                    `;
+
+                    tbody.appendChild(tr);
+                });
+            });
+
+            updateSummary();
+        }
+
+        function updateRowStatus(idNasabah, status) {
+            const row = dataKeuangan.find(r => r.id_nasabah === idNasabah);
+            if (!row) return;
+
+            row.status = status;
+            
+            // Logika otomatis pengisian jumlah ambil saat status berubah
+            if (status === 'DIAMBIL') {
+                const saldoAwal = parseFloat(row.saldo_awal || 0);
+                const saldoKotor = parseFloat(row.saldo_kotor || 0);
+                const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+                // Seluruh saldo bersih yang bisa diambil
+                row.jumlah_ambil = saldoAwal + (isKasBankSampah ? saldoKotor : saldoKotor * 0.90);
+            } else {
+                row.jumlah_ambil = 0;
+            }
+
+            renderTabel();
+        }
+
+        function updateRowAmbil(idNasabah, val) {
+            const row = dataKeuangan.find(r => r.id_nasabah === idNasabah);
+            if (!row) return;
+
+            const inputVal = parseFloat(val) || 0;
+            const saldoAwal = parseFloat(row.saldo_awal || 0);
+            const saldoKotor = parseFloat(row.saldo_kotor || 0);
+            const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+            const netSetoran = isKasBankSampah ? saldoKotor : saldoKotor * 0.90;
+            const maxAmbil = saldoAwal + netSetoran;
+
+            if (inputVal > maxAmbil) {
+                row.jumlah_ambil = maxAmbil;
+                const inputEl = document.querySelector(`tr[data-id="${idNasabah}"] input`);
+                if (inputEl) {
+                    inputEl.value = Math.round(maxAmbil);
+                }
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Jumlah pengambilan tidak boleh melebihi saldo yang dimiliki!',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } else {
+                row.jumlah_ambil = inputVal;
+            }
+
+            // Rekalkulasi tanpa render penuh agar kursor input tidak terganggu
+            const saldoAkhir = saldoAwal + netSetoran - row.jumlah_ambil;
+
+            const tr = document.querySelector(`tr[data-id="${idNasabah}"]`);
+            if (tr) {
+                const totalCell = tr.cells[8];
+                totalCell.textContent = `Rp ${Math.round(saldoAkhir).toLocaleString('id-ID')}`;
+            }
+            updateSummary();
+        }
+
+        function updateSummary() {
+            let totalAwal = 0, totalKotor = 0, totalAdmin = 0, totalAmbil = 0, totalAkhir = 0;
+
+            dataKeuangan.forEach(row => {
+                const sa = parseFloat(row.saldo_awal || 0);
+                const sk = parseFloat(row.saldo_kotor || 0);
+                const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+                const ac = isKasBankSampah ? 0 : sk * 0.10;
+                const ja = parseFloat(row.jumlah_ambil || 0);
+                const sak = sa + (isKasBankSampah ? sk : sk * 0.90) - ja;
+
+                totalAwal += sa;
+                totalKotor += sk;
+                totalAdmin += ac;
+                totalAmbil += ja;
+                totalAkhir += sak;
+            });
+
+            document.getElementById('summary-awal').innerText = `Rp ${Math.round(totalAwal).toLocaleString('id-ID')}`;
+            document.getElementById('summary-kotor').innerText = `Rp ${Math.round(totalKotor).toLocaleString('id-ID')}`;
+            document.getElementById('summary-admin').innerText = `Rp ${Math.round(totalAdmin).toLocaleString('id-ID')}`;
+            document.getElementById('summary-ambil').innerText = `Rp ${Math.round(totalAmbil).toLocaleString('id-ID')}`;
+            document.getElementById('summary-akhir').innerText = `Rp ${Math.round(totalAkhir).toLocaleString('id-ID')}`;
+        }
+
+        async function simpanBarisRekap(idNasabah) {
+            const row = dataKeuangan.find(r => r.id_nasabah === idNasabah);
+            if (!row) return;
+
+            const periode = document.getElementById('filter-periode').value + '-01'; // Konversi ke format YYYY-MM-DD
+            const saldoAwal = parseFloat(row.saldo_awal || 0);
+            const saldoKotor = parseFloat(row.saldo_kotor || 0);
+            const jumlahAmbil = parseFloat(row.jumlah_ambil || 0);
+            const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+
+            const maxAvailable = saldoAwal + (isKasBankSampah ? saldoKotor : saldoKotor * 0.90);
+            if (jumlahAmbil > maxAvailable) {
+                Swal.fire('Peringatan', `Jumlah pengambilan untuk ${row.nama_nasabah} tidak boleh melebihi saldo yang dimiliki!`, 'warning');
+                return;
+            }
+
+            const saldoAkhir = saldoAwal + (isKasBankSampah ? saldoKotor : saldoKotor * 0.90) - jumlahAmbil;
+
+            const payload = {
+                id_nasabah: row.id_nasabah,
+                periode,
+                saldo_awal: saldoAwal,
+                saldo_kotor: saldoKotor,
+                jumlah_ambil: jumlahAmbil,
+                saldo_akhir: saldoAkhir,
+                status: row.status || 'DITABUNG'
+            };
+
+            try {
+                const res = await fetch('/api/setoran-nasabah', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: `Data rekap untuk ${row.nama_nasabah} berhasil disimpan.`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    Swal.fire('Gagal!', err.message || 'Gagal menyimpan data rekap nasabah.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error!', 'Tidak bisa terhubung ke server.', 'error');
+            }
+        }
+
+        async function simpanSemuaRekap() {
+            if (dataKeuangan.length === 0) return;
+
+            Swal.fire({
+                title: 'Menyimpan Rekap...',
+                text: 'Harap tunggu sebentar, sistem sedang menyimpan seluruh data rekap.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const periode = document.getElementById('filter-periode').value + '-01';
+
+            try {
+                // Simpan secara berurutan agar database tidak terkunci
+                for (const row of dataKeuangan) {
+                    const saldoAwal = parseFloat(row.saldo_awal || 0);
+                    const saldoKotor = parseFloat(row.saldo_kotor || 0);
+                    const jumlahAmbil = parseFloat(row.jumlah_ambil || 0);
+                    const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+
+                    const maxAvailable = saldoAwal + (isKasBankSampah ? saldoKotor : saldoKotor * 0.90);
+                    if (jumlahAmbil > maxAvailable) {
+                        Swal.fire('Gagal!', `Pengambilan untuk ${row.nama_nasabah} melebihi saldo yang dimiliki!`, 'error');
+                        return;
+                    }
+
+                    const saldoAkhir = saldoAwal + (isKasBankSampah ? saldoKotor : saldoKotor * 0.90) - jumlahAmbil;
+
+                    const payload = {
+                        id_nasabah: row.id_nasabah,
+                        periode,
+                        saldo_awal: saldoAwal,
+                        saldo_kotor: saldoKotor,
+                        jumlah_ambil: jumlahAmbil,
+                        saldo_akhir: saldoAkhir,
+                        status: row.status || 'DITABUNG'
+                    };
+
+                    const res = await fetch('/api/setoran-nasabah', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`Gagal menyimpan rekap untuk ${row.nama_nasabah}`);
+                    }
+                }
+
+                Swal.fire('Berhasil!', 'Semua data rekap keuangan bulanan berhasil disimpan.', 'success');
+                loadKeuangan();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', err.message || 'Terjadi kesalahan saat menyimpan rekap massal.', 'error');
+            }
+        }
+
+        function cetakLaporanPdf() {
+            const periode = document.getElementById('filter-periode').value;
+            if (!periode) {
+                return Swal.fire('Peringatan', 'Silakan pilih periode bulan terlebih dahulu!', 'warning');
+            }
+            window.open(`print_keuangan.html?periode=${periode}`, '_blank');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadKeuangan);
+    </script>
+</body>
+</html>

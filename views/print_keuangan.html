@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Keuangan Nasabah | Bank Sampah Digital</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 5mm 8mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 6.8pt;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            line-height: 1.15;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 3.5mm;
+        }
+        header h1 {
+            font-size: 9.5pt;
+            font-weight: 900;
+            margin: 0 0 1mm 0;
+            color: #0f172a;
+            letter-spacing: 0.2px;
+        }
+        header h2 {
+            font-size: 8.5pt;
+            font-weight: 800;
+            margin: 0 0 1mm 0;
+            color: #1e293b;
+        }
+        header p {
+            font-size: 7.5pt;
+            font-weight: 700;
+            margin: 0;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2.5mm;
+            border: 1px solid #475569;
+        }
+        th, td {
+            border: 1px solid #475569;
+            padding: 0.85mm 1.1mm;
+            vertical-align: middle;
+        }
+        th {
+            font-weight: 900;
+            text-align: center;
+            font-size: 6.5pt;
+            text-transform: uppercase;
+            background-color: #fef08a; /* Default Yellow Header */
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .font-black { font-weight: 900; }
+        
+        /* Group Headers */
+        .group-rt-34 { background-color: #f97316 !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
+        .group-rt-35 { background-color: #f59e0b !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
+        .group-rt-36 { background-color: #0d9488 !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
+        .group-lain { background-color: #2563eb !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
+        
+        /* Special Rows */
+        .row-kas-bank { background-color: #ffedd5 !important; font-weight: bold; }
+        .row-kas-rw { background-color: #f1f5f9 !important; font-weight: bold; }
+        .row-remaja { background-color: #dcfce7 !important; font-weight: bold; }
+
+        /* Summary Colors */
+        .sum-a { background-color: #fff !important; font-weight: 900; }
+        .sum-b { background-color: #dcedc8 !important; font-weight: 900; }
+        .sum-c { background-color: #fff9c4 !important; font-weight: 900; }
+        .sum-d { background-color: #bbdefb !important; font-weight: 900; }
+        
+        /* Loader styles */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div>Menyiapkan Laporan Keuangan...</div>
+    </div>
+
+    <header>
+        <h1>BANK SAMPAH SURYA MANDIRI REBORN-RW 10 SURYODININGRATAN YOGYAKARTA</h1>
+        <h2>LAPORAN KEUANGAN NASABAH</h2>
+        <p id="label-periode">PERIODE: -</p>
+    </header>
+
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 25px;">NO.</th>
+                <th rowspan="2" style="width: 130px;">NAMA NASABAH</th>
+                <th rowspan="2" style="width: 75px;" id="header-saldo-awal">SALDO AWAL</th>
+                <th colspan="3" id="header-setoran-smr">SETORAN BS-SMR</th>
+                <th rowspan="2" style="width: 75px;">SALDO BERSIH<br>AKHIR (1)</th>
+                <th rowspan="2" style="width: 75px;">DIAMBIL/<br>DITABUNG</th>
+                <th rowspan="2" style="width: 65px;">JUMLAH<br>AMBIL</th>
+                <th rowspan="2" style="width: 75px;">SALDO BERSIH<br>AKHIR (2)</th>
+            </tr>
+            <tr>
+                <th style="width: 75px;" id="header-tgl-setoran">-</th>
+                <th style="width: 50px;">10%</th>
+                <th style="width: 65px;">NETTO</th>
+            </tr>
+        </thead>
+        <tbody id="report-body">
+            <!-- Data rendered dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const rawPeriode = urlParams.get('periode'); // Format: YYYY-MM
+        
+        if (!rawPeriode) {
+            alert('Periode tidak valid.');
+            window.close();
+        }
+
+        const MONTH_NAMES = [
+            "JANUARI", "PEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
+            "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOPEMBER", "DESEMBER"
+        ];
+
+        // Parser year-month local safe
+        function getYearMonthParts(dateStr) {
+            const d = new Date(dateStr);
+            return {
+                year: d.getFullYear(),
+                month: d.getMonth()
+            };
+        }
+
+        async function initReport() {
+            try {
+                // 1. Fetch current month rekap
+                const resCurrent = await fetch(`/api/setoran-nasabah?periode=${rawPeriode}`);
+                const data = await resCurrent.json();
+
+                if (!data || data.length === 0) {
+                    alert(`Tidak ada data setoran nasabah untuk periode ${rawPeriode}`);
+                    window.close();
+                    return;
+                }
+
+                // Ambil tanggal eksekusi (periode) dari data
+                const executionDate = new Date(data[0].periode || `${rawPeriode}-01`);
+                const executionDateStr = executionDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+                
+                // Set Header Labels
+                const targetMonthIndex = parseInt(rawPeriode.split('-')[1]) - 1;
+                const targetYear = rawPeriode.split('-')[0];
+                document.getElementById('label-periode').innerText = `PERIODE: ${MONTH_NAMES[targetMonthIndex]} ${targetYear}`;
+                
+                // Header Saldo Awal (Bulan Lalu)
+                const prevMonthDate = new Date(targetYear, targetMonthIndex - 1, 1);
+                const prevMonthName = MONTH_NAMES[prevMonthDate.getMonth()];
+                const prevYearShort = prevMonthDate.getFullYear().toString().slice(-2);
+                document.getElementById('header-saldo-awal').innerHTML = `SALDO AWAL<br>${prevMonthName.slice(0,3)}-${prevYearShort}`;
+                
+                // Header tanggal setoran
+                document.getElementById('header-tgl-setoran').innerText = executionDateStr;
+
+                // 2. Hitung akumulasi admin historis sebelum bulan terpilih (Juni 2026 = start database)
+                let prevAdminAccumulated = 1971929; // Start admin balance before June 2026
+                const startYear = 2026;
+                const startMonth = 5; // June (0-based: 5)
+                
+                const targetParts = rawPeriode.split('-');
+                const targetY = parseInt(targetParts[0]);
+                const targetM = parseInt(targetParts[1]) - 1; // 0-based
+
+                // Hitung bulan-bulan di antara Juni 2026 dan targetMonth (exclusive)
+                let currentY = startYear;
+                let currentM = startMonth;
+
+                while (currentY < targetY || (currentY === targetY && currentM < targetM)) {
+                    const monthStr = `${currentY}-${String(currentM + 1).padStart(2, '0')}`;
+                    try {
+                        const resPrev = await fetch(`/api/setoran-nasabah?periode=${monthStr}`);
+                        if (resPrev.ok) {
+                            const prevData = await resPrev.json();
+                            // Sum admin 10% of citizens
+                            prevData.forEach(row => {
+                                if (row.id_nasabah != 64 && row.id_nasabah != 65 && row.id_nasabah != 66) {
+                                    prevAdminAccumulated += parseFloat(row.saldo_kotor || 0) * 0.10;
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error(`Gagal menghitung admin untuk bulan ${monthStr}:`, e);
+                    }
+                    
+                    // Increment month
+                    currentM++;
+                    if (currentM > 11) {
+                        currentM = 0;
+                        currentY++;
+                    }
+                }
+
+                // 3. Pengelompokan nasabah
+                const groups = {
+                    'RT 34': [],
+                    'RT 35': [],
+                    'RT 36': [],
+                    'WILAYAH LAIN': []
+                };
+
+                data.forEach(row => {
+                    // Cek apakah akun khusus
+                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                    const isSpecial = specialNames.includes(row.nama_nasabah);
+
+                    if (isSpecial) {
+                        // Taruh di WILAYAH LAIN paling bawah
+                        groups['WILAYAH LAIN'].push(row);
+                    } else {
+                        const isRW10 = row.rw && row.rw.toString().trim() === '10';
+                        const rt = row.rt ? row.rt.toString().trim() : '';
+                        
+                        if (isRW10 && rt === '34') {
+                            groups['RT 34'].push(row);
+                        } else if (isRW10 && rt === '35') {
+                            groups['RT 35'].push(row);
+                        } else if (isRW10 && rt === '36') {
+                            groups['RT 36'].push(row);
+                        } else {
+                            groups['WILAYAH LAIN'].push(row);
+                        }
+                    }
+                });
+
+                // Urutkan nasabah dalam setiap grup secara alfabetis (akun khusus paling bawah)
+                const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                Object.keys(groups).forEach(gName => {
+                    groups[gName].sort((a, b) => {
+                        const isASpecial = specialNames.includes(a.nama_nasabah);
+                        const isBSpecial = specialNames.includes(b.nama_nasabah);
+                        if (isASpecial && !isBSpecial) return 1;
+                        if (!isASpecial && isBSpecial) return -1;
+                        if (isASpecial && isBSpecial) {
+                            return specialNames.indexOf(a.nama_nasabah) - specialNames.indexOf(b.nama_nasabah);
+                        }
+                        return a.nama_nasabah.localeCompare(b.nama_nasabah);
+                    });
+                });
+
+                // 4. Render Table Rows
+                const tbody = document.getElementById('report-body');
+                tbody.innerHTML = '';
+
+                // Variabel kalkulasi ringkasan bulanan (hanya untuk warga biasa)
+                let sumAwalWarga = 0;
+                let sumKotorWarga = 0;
+                let sumAdminWarga = 0;
+                let sumNettoWarga = 0;
+                let sumAkhir1Warga = 0;
+                let sumAmbilWarga = 0;
+                let sumAkhir2Warga = 0;
+
+                const groupOrder = ['RT 34', 'RT 35', 'RT 36', 'WILAYAH LAIN'];
+                
+                groupOrder.forEach(gName => {
+                    if (groups[gName].length === 0) return;
+
+                    // Header RT Row
+                    let rtClass = 'group-rt-34';
+                    if (gName === 'RT 35') rtClass = 'group-rt-35';
+                    if (gName === 'RT 36') rtClass = 'group-rt-36';
+                    if (gName === 'WILAYAH LAIN') rtClass = 'group-lain';
+
+                    tbody.innerHTML += `
+                        <tr class="${rtClass}">
+                            <td colspan="10" class="font-black text-center">${gName}</td>
+                        </tr>
+                    `;
+
+                    let idx = 1;
+                    groups[gName].forEach(row => {
+                        const isSpecial = specialNames.includes(row.nama_nasabah);
+                        const noVal = isSpecial ? '#' : idx++;
+                        
+                        const saldoAwal = parseFloat(row.saldo_awal || 0);
+                        const saldoKotor = parseFloat(row.saldo_kotor || 0);
+                        const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';
+                        
+                        const adminCut = isKasBankSampah ? 0 : (saldoKotor * 0.10);
+                        const netSetoran = isKasBankSampah ? saldoKotor : (saldoKotor * 0.90);
+                        const saldoAkhir1 = saldoAwal + netSetoran;
+                        const status = row.status || 'DITABUNG';
+                        const jumlahAmbil = parseFloat(row.jumlah_ambil || 0);
+                        const saldoAkhir2 = saldoAkhir1 - jumlahAmbil;
+
+                        // Akumulasi summary warga jika bukan akun khusus
+                        if (!isSpecial) {
+                            sumAwalWarga += saldoAwal;
+                            sumKotorWarga += saldoKotor;
+                            sumAdminWarga += adminCut;
+                            sumNettoWarga += netSetoran;
+                            sumAkhir1Warga += saldoAkhir1;
+                            sumAmbilWarga += jumlahAmbil;
+                            sumAkhir2Warga += saldoAkhir2;
+                        }
+
+                        // Custom row styles for Special Accounts
+                        let rowClass = '';
+                        if (row.nama_nasabah === 'Kas Bank Sampah') rowClass = 'row-kas-bank';
+                        if (row.nama_nasabah === 'Kas RW 10') rowClass = 'row-kas-rw';
+                        if (row.nama_nasabah === 'Remaja RW10 SYD') rowClass = 'row-remaja';
+
+                        tbody.innerHTML += `
+                            <tr class="${rowClass}">
+                                <td class="text-center font-bold">${noVal}</td>
+                                <td>${row.nama_nasabah}</td>
+                                <td class="text-right">${Math.round(saldoAwal).toLocaleString('id-ID')}</td>
+                                <td class="text-right text-emerald-700">${Math.round(saldoKotor).toLocaleString('id-ID')}</td>
+                                <td class="text-right text-rose-500">${Math.round(adminCut).toLocaleString('id-ID')}</td>
+                                <td class="text-right font-bold text-slate-800">${Math.round(netSetoran).toLocaleString('id-ID')}</td>
+                                <td class="text-right font-bold text-slate-800">${Math.round(saldoAkhir1).toLocaleString('id-ID')}</td>
+                                <td class="text-center font-bold text-xs">${status}</td>
+                                <td class="text-right">${Math.round(jumlahAmbil).toLocaleString('id-ID')}</td>
+                                <td class="text-right font-bold text-blue-700">${Math.round(saldoAkhir2).toLocaleString('id-ID')}</td>
+                            </tr>
+                        `;
+                    });
+                });
+
+                // 5. Render Summaries (A, B, C, D)
+                
+                // Cari rekap khusus Kas Bank Sampah untuk bulan ini
+                const kasBankRow = data.find(r => r.nama_nasabah === 'Kas Bank Sampah');
+                const kasBankAwal = kasBankRow ? parseFloat(kasBankRow.saldo_awal || 0) : 92954;
+                const kasBankKotor = kasBankRow ? parseFloat(kasBankRow.saldo_kotor || 0) : 62320;
+                const kasBankAmbil = kasBankRow ? parseFloat(kasBankRow.jumlah_ambil || 0) : 150000;
+                
+                // Cari rekap Kas RW 10 & Remaja
+                const kasRwRow = data.find(r => r.nama_nasabah === 'Kas RW 10');
+                const kasRwAwal = kasRwRow ? parseFloat(kasRwRow.saldo_awal || 0) : 64107;
+                
+                const remajaRow = data.find(r => r.nama_nasabah === 'Remaja RW10 SYD');
+                const remajaAwal = remajaRow ? parseFloat(remajaRow.saldo_awal || 0) : 72540;
+
+                // Total rekap bersih warga + special accounts (Kas Bank Sampah, Kas RW 10, Remaja)
+                // Saldo Awal (Juni 2026 = 12.849.803 warga + 92.954 KasBS + 64.107 KasRW + 72.540 Remaja = 13.079.404)
+                const totalAwalGrand = sumAwalWarga + kasBankAwal + kasRwAwal + remajaAwal;
+                const totalAkhir1Grand = sumAkhir1Warga + (kasBankAwal + kasBankKotor) + kasRwAwal + remajaAwal;
+                const totalAkhir2Grand = sumAkhir2Warga + (kasBankAwal + kasBankKotor - kasBankAmbil) + kasRwAwal + remajaAwal;
+
+                // Row A: TOTAL PENDAPATAN KOTOR NASABAH
+                const rowAKotor = sumKotorWarga + kasBankKotor;
+                tbody.innerHTML += `
+                    <tr class="sum-a">
+                        <td class="text-center font-black">A</td>
+                        <td class="font-black">TOTAL PENDAPATAN KOTOR NASABAH</td>
+                        <td></td>
+                        <td class="text-right font-black">${Math.round(rowAKotor).toLocaleString('id-ID')}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                `;
+
+                // Row B: ADMINISTRASI 10%
+                const totalAdminAccumulated = prevAdminAccumulated + sumAdminWarga;
+                tbody.innerHTML += `
+                    <tr class="sum-b">
+                        <td class="text-center font-black">B</td>
+                        <td class="font-black">ADMINISTRASI 10%</td>
+                        <td class="text-right font-black">${Math.round(prevAdminAccumulated).toLocaleString('id-ID')}</td>
+                        <td></td>
+                        <td class="text-right font-black">${Math.round(sumAdminWarga).toLocaleString('id-ID')}</td>
+                        <td></td>
+                        <td class="text-right font-black">${Math.round(totalAdminAccumulated).toLocaleString('id-ID')}</td>
+                        <td class="text-center font-black">DITABUNG</td>
+                        <td class="text-right font-black">0</td>
+                        <td class="text-right font-black">${Math.round(totalAdminAccumulated).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+
+                // Row C: TOTAL PENDAPATAN BERSIH NASABAH
+                const rowCSaldoAwal = sumAwalWarga + kasBankAwal + kasRwAwal + remajaAwal;
+                const rowCNetto = sumNettoWarga + kasBankKotor;
+                const rowCAkhir1 = rowCSaldoAwal + rowCNetto;
+                const rowCAmbil = sumAmbilWarga + kasBankAmbil;
+                const rowCAkhir2 = rowCAkhir1 - rowCAmbil;
+                const rowCStatus = rowCAmbil > 0 ? 'DIAMBIL' : 'DITABUNG';
+
+                tbody.innerHTML += `
+                    <tr class="sum-c">
+                        <td class="text-center font-black">C</td>
+                        <td class="font-black">TOTAL PENDAPATAN BERSIH NASABAH</td>
+                        <td class="text-right font-black">${Math.round(rowCSaldoAwal).toLocaleString('id-ID')}</td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-right font-black">${Math.round(rowCNetto).toLocaleString('id-ID')}</td>
+                        <td class="text-right font-black">${Math.round(rowCAkhir1).toLocaleString('id-ID')}</td>
+                        <td class="text-center font-black">${rowCStatus}</td>
+                        <td class="text-right font-black">${Math.round(rowCAmbil).toLocaleString('id-ID')}</td>
+                        <td class="text-right font-black">${Math.round(rowCAkhir2).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+
+                // Row D: TOTAL UANG YANG DIPEGANG BENDAHARA
+                const previousTotalBendahara = prevAdminAccumulated + rowCSaldoAwal;
+                const finalTotalBendahara = totalAdminAccumulated + rowCAkhir2;
+
+                tbody.innerHTML += `
+                    <tr class="sum-d">
+                        <td class="text-center font-black">D</td>
+                        <td class="font-black">TOTAL UANG YANG DIPEGANG BENDAHARA:</td>
+                        <td class="text-right font-black">${Math.round(previousTotalBendahara).toLocaleString('id-ID')}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-right font-black" style="font-size: 8pt;">${Math.round(finalTotalBendahara).toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+
+                // Hide loader and print
+                document.getElementById('loader').style.display = 'none';
+                
+                // Trigger print dialog
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                alert('Gagal menyiapkan data cetak laporan.');
+                window.close();
+            }
+        }
+
+        window.onload = initReport;
+    </script>
+</body>
+</html>

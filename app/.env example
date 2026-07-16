@@ -1,0 +1,14 @@
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASS=your_database_password
+DB_HOST=your_database_host
+DB_PORT=your_database_port
+PORT=your_port_number
+
+# example
+# DB_NAME=bank_sampah
+# DB_USER=root
+# DB_PASS=
+# DB_HOST=localhost
+# DB_PORT=3306
+# PORT=3000

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Dashboard | Bank Sampah Digital
+    </title>
+    <link rel="stylesheet" href="./src/css/output.css">
+    <script src="./src/lib/jspdf.umd.min.js"></script>
+    <script src="./src/lib/jspdf.plugin.autotable.min.js"></script>
+    <script src="./src/lib/sweetalert2.all.min.js"></script>
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, #d1fae5 0%, transparent 20%),
+                radial-gradient(circle at bottom right, #dcfce7 0%, transparent 25%),
+                #f8fafc;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background:
+                linear-gradient(to bottom,
+                    #10b981,
+                    #22c55e);
+            border-radius: 20px;
+        }
+        .glass {
+            background: rgba(255, 255, 255, .72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+        .hero-pattern {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, .04) 1px,
+                    transparent 1px),
+                linear-gradient(90deg,
+                    rgba(255, 255, 255, .04) 1px,
+                    transparent 1px);
+            background-size: 40px 40px;
+        }
+        .card-modern {
+            transition: all .35s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-modern:hover {
+            transform: translateY(-6px);
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, .08);
+        }
+        .card-modern::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background:
+                linear-gradient(135deg,
+                    rgba(16, 185, 129, .35),
+                    rgba(255, 255, 255, .2));
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .btn-modern {
+            transition: all .3s ease;
+        }
+        .btn-modern:hover {
+            transform: translateY(-2px);
+        }
+        .btn-modern:active {
+            transform: scale(.98);
+        }
+        .input-modern {
+            transition: all .25s ease;
+            background: rgba(255, 255, 255, .8);
+            backdrop-filter: blur(10px);
+        }
+        .input-modern:focus {
+            box-shadow:
+                0 0 0 4px rgba(16, 185, 129, .12);
+            border-color: #10b981;
+            background: white;
+        }
+        .table-row {
+            transition: all .25s ease;
+        }
+        .table-row:hover {
+            background: #f8fafc;
+            transform: scale(1.005);
+        }
+        .badge {
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: .3px;
+        }
+        .badge-pending {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        .badge-proses {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        .badge-selesai {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .animate-fade {
+            animation: fade .5s ease;
+        }
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            } to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media(max-width:768px) {
+            aside {
+                display: none;
+            }
+            .mobile-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .mobile-padding {
+                padding: 20px !important;
+            }
+            .mobile-title {
+                font-size: 30px !important;
+            }
+            header {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased selection:bg-emerald-200 selection:text-emerald-900">
+    <div class="flex h-screen overflow-hidden">
+        <div id="sidebar-container"></div>
+        <script>
+            fetch('sidebar.html').then(r => r.text()).then(html => {
+                document.getElementById('sidebar-container').innerHTML = html;
+            });
+        </script>
+
+        <main class="flex-1 h-full overflow-y-auto relative scroll-smooth">
+            <header
+                class="glass border-b border-white/40 px-10 py-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900 mobile-title">
+                        Dashboard Admin
+                    </h1>
+                    <p class="text-slate-500 font-medium text-sm mt-1 flex items-center gap-2">
+                        📍 Pusat kendali Bank Sampah Digital
+                    </p>
+                </div>
+            </header>
+
+            <div class="p-8 md:p-10 max-w-[1400px] mx-auto space-y-8 mobile-padding">
+
+                <section
+                    class="relative overflow-hidden rounded-[36px] p-10 shadow-2xl bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500">
+                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-5 rounded-full blur-2xl">
+                    </div>
+                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-900 opacity-20 rounded-full blur-2xl">
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                            <div>
+                                <h2 class="text-4xl md:text-5xl font-black leading-tight tracking-tight mobile-title text-white">
+                                    Bank Sampah
+                                    <br>
+                                    <span class="text-emerald-100">
+                                        Digital
+                                    </span>
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mobile-grid">
+                            <a href="data_nasabah.html"
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-7 border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-[0_20px_45px_rgba(255,255,255,0.05)] block">
+                                <div class="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-5 text-2xl font-bold border border-white/10">
+                                    👥
+                                </div>
+                                <p class="text-white/80 text-sm font-semibold mb-2">
+                                    Total Nasabah
+                                </p>
+                                <h4 class="text-4xl lg:text-5xl font-black text-white tracking-tight" id="stat-warga">
+                                    0
+                                </h4>
+                            </a>
+                            <a href="input_setoran.html"
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-7 border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-[0_20px_45px_rgba(255,255,255,0.05)] block">
+                                <div class="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-5 text-2xl font-bold border border-white/10">
+                                    💰
+                                </div>
+                                <p class="text-white/80 text-sm font-semibold mb-2">
+                                    Kas Bank Sampah
+                                </p>
+                                <h4 class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight break-words"
+                                    id="stat-kas">
+                                    Rp 0
+                                </h4>
+                            </a>
+                            <a href="input_setoran.html"
+                                class="bg-white/10 backdrop-blur-md rounded-2xl p-7 border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 hover:shadow-[0_20px_45px_rgba(255,255,255,0.05)] block">
+                                <div class="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center mb-5 text-2xl font-bold border border-white/10">
+                                    💼
+                                </div>
+                                <p class="text-white/80 text-sm font-semibold mb-2">
+                                    Total Uang Bendahara
+                                </p>
+                                <h4 id="stat-bendahara" class="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight break-words">
+                                    Rp 0
+                                </h4>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION EXPORT PDF -->
+                <section class="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Cetak Laporan Bulanan (PDF)</h2>
+                            <p class="text-sm text-slate-500 mt-1">Unduh rekap setoran nasabah dan pengepul dalam format PDF</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label for="filter-periode" class="text-sm font-bold text-slate-600">Periode:</label>
+                            <input type="month" id="filter-periode" class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-emerald-400">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="exportLaporanNasabah()" class="btn-modern bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-2xl shadow-md transition-all flex items-center justify-center gap-3">
+                            📄 Laporan Setoran Nasabah
+                        </button>
+                        <button onclick="exportLaporanPengepul()" class="btn-modern bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-md transition-all flex items-center justify-center gap-3">
+                            📊 Laporan Setoran Pengepul
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="./src/js/notif-badge.js"></script>
+    <script>
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+
+                document.getElementById('stat-warga').innerText = stats.total_nasabah || 0;
+                document.getElementById('stat-kas').innerText = 'Rp ' + parseInt(stats.kas_bank_sampah || 0).toLocaleString('id-ID');
+                document.getElementById('stat-bendahara').innerText = 'Rp ' + parseInt(stats.total_uang_bendahara || 0).toLocaleString('id-ID');
+            } catch (error) {
+                console.log('Gagal load dashboard:', error);
+            }
+        }
+
+        async function exportLaporanNasabah() {
+            const periode = document.getElementById('filter-periode').value;
+            if (!periode) {
+                return Swal.fire({
+                    title: 'Pilih Periode',
+                    text: 'Silakan pilih periode bulan terlebih dahulu!',
+                    icon: 'warning',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+
+            window.open(`print_keuangan.html?periode=${periode}`, '_blank');
+        }
+
+        async function exportLaporanPengepul() {
+            const periode = document.getElementById('filter-periode').value;
+            if (!periode) {
+                return Swal.fire({
+                    title: 'Pilih Periode',
+                    text: 'Silakan pilih periode bulan terlebih dahulu!',
+                    icon: 'warning',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+
+            try {
+                const response = await fetch(`/api/setoran-pengepul?periode=${periode}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    return Swal.fire({
+                        title: 'Data Kosong',
+                        text: `Tidak ada data setoran pengepul untuk periode ${periode}`,
+                        icon: 'info',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+
+                // Ambil tanggal transaksi aktual dari item pertama
+                let transactionDate = data[0].periode;
+                const d = new Date(transactionDate);
+                const monthsIndo = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+                let formattedPeriode = "";
+                if (!isNaN(d.getTime())) {
+                    formattedPeriode = String(d.getDate()).padStart(2, '0') + ' ' + monthsIndo[d.getMonth()] + ' ' + d.getFullYear();
+                } else {
+                    const [y, m] = periode.split('-');
+                    formattedPeriode = monthsIndo[parseInt(m) - 1] + ' ' + y;
+                }
+
+                // Pisahkan data dibeli warga (Lain-lain) vs disetor ke pengepul
+                const pengepulItems = [];
+                const wargaItems = [];
+                data.forEach(item => {
+                    if (item.keterangan && item.keterangan.toUpperCase().trim() === 'DIBELI WARGA') {
+                        wargaItems.push(item);
+                    } else {
+                        pengepulItems.push(item);
+                    }
+                });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+
+                // Header Dokumen
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.text('BANK SAMPAH SURYA MANDIRI REBORN - RW.10 SURYODININGRATAN YOGYAKARTA', 14, 18);
+                doc.text(`PERIODE: ${formattedPeriode}`, 14, 23);
+                doc.text('SETORAN PENGEPUL', 14, 28);
+
+                // Buat baris tabel secara sekuensial
+                const rows = [];
+                let rowCounter = 1;
+
+                // 1. Loop Pengepul Items
+                pengepulItems.forEach(item => {
+                    rows.push([
+                        rowCounter++,
+                        item.nama_sampah.toUpperCase(),
+                        parseFloat(item.jumlah_kg).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                        item.satuan || 'KG',
+                        parseInt(item.harga_satuan || 0).toLocaleString('id-ID'),
+                        parseInt(item.total || 0).toLocaleString('id-ID'),
+                        item.keterangan || ''
+                    ]);
+                });
+
+                // 2. Baris Total Pengepul (Tanpa nomor dan sel digabung, rata kiri)
+                const totalPengepul = pengepulItems.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+                rows.push([
+                    { content: 'TOTAL:', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPengepul.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                // 3. Baris Terima dari Pengepul (Tanpa nomor dan sel digabung, rata kiri)
+                rows.push([
+                    { content: 'TERIMA DARI PENGEPUL', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPengepul.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                // 4. Baris Pembatas Lain-lain (Tanpa nomor dan sel digabung, rata kiri)
+                rows.push([
+                    { content: 'LAIN-LAIN:', colSpan: 7 }
+                ]);
+
+                // 5. Loop Warga Items
+                wargaItems.forEach(item => {
+                    rows.push([
+                        rowCounter++,
+                        item.nama_sampah.toUpperCase(),
+                        parseFloat(item.jumlah_kg).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                        item.satuan || 'KG',
+                        parseInt(item.harga_satuan || 0).toLocaleString('id-ID'),
+                        parseInt(item.total || 0).toLocaleString('id-ID'),
+                        item.keterangan || ''
+                    ]);
+                });
+
+                // 6. Baris Total Akhir Penjualan Sampah (Tanpa nomor dan sel digabung, rata kiri)
+                const totalWarga = wargaItems.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+                const totalPenjualan = totalPengepul + totalWarga;
+                rows.push([
+                    { content: 'TOTAL PENJUALAN SAMPAH', colSpan: 5, styles: { halign: 'left' } },
+                    { content: totalPenjualan.toLocaleString('id-ID'), colSpan: 2 }
+                ]);
+
+                // Render Tabel (Biasa / Hitam Putih Polos)
+                doc.autoTable({
+                    startY: 32,
+                    head: [['NO.', 'NAMA BARANG', 'JUMLAH', 'SATUAN', 'HARGA', 'TOTAL', 'KETERANGAN']],
+                    body: rows,
+                    theme: 'grid',
+                    styles: {
+                        textColor: [0, 0, 0],
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        fontSize: 9,
+                        font: 'Helvetica'
+                    },
+                    headStyles: {
+                        fillColor: false,
+                        textColor: [0, 0, 0],
+                        fontStyle: 'bold',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    columnStyles: {
+                        0: { halign: 'center' }, // No.
+                        2: { halign: 'right' },  // Jumlah
+                        3: { halign: 'center' }, // Satuan
+                        4: { halign: 'right' },  // Harga
+                        5: { halign: 'right' }   // Total
+                    },
+                    didParseCell: function (cellData) {
+                        const label = cellData.row.cells[1] ? cellData.row.cells[1].text : '';
+                        const firstCellText = cellData.row.cells[0] ? cellData.row.cells[0].text : '';
+                        if (label === 'TOTAL:' || label === 'TERIMA DARI PENGEPUL' || firstCellText === 'LAIN-LAIN:' || firstCellText === 'TOTAL PENJUALAN SAMPAH') {
+                            cellData.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+
+                // Area Tanda Tangan
+                const finalY = doc.autoTable.previous.finalY || 32;
+                const sigY = finalY + 15;
+
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+
+                // Kolom Kiri - Direktur (Center X = 45)
+                doc.text('DIREKTUR BS SMR RW 10', 45, sigY, { align: 'center' });
+                doc.text('(                                         )', 45, sigY + 28, { align: 'center' });
+
+                // Kolom Kanan - Bendahara & Tanggal (Center X = 155)
+                doc.text(`YOGYAKARTA, ${formattedPeriode}`, 155, sigY, { align: 'center' });
+                doc.text('BENDAHARA:', 155, sigY + 5, { align: 'center' });
+                doc.text('(                                         )', 155, sigY + 28, { align: 'center' });
+
+                // Tampilkan preview PDF di tab baru daripada langsung download otomatis
+                const pdfUrl = doc.output('bloburl');
+                window.open(pdfUrl, '_blank');
+            } catch (e) {
+                console.error(e);
+                alert('Gagal mengekspor PDF setoran pengepul');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById('filter-periode').value = `${year}-${month}`;
+            loadDashboard();
+            setInterval(loadDashboard, 10000);
+        });
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Nasabah Bank Sampah Suryo Mandiri Reborn | Bank Sampah Digital</title>
+    <link rel="stylesheet" href="./src/css/output.css">
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at top left, #d1fae5 0%, transparent 20%),
+                radial-gradient(circle at bottom right, #dcfce7 0%, transparent 25%),
+                #f8fafc;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #10b981, #22c55e);
+            border-radius: 20px;
+        }
+        .glass {
+            background: rgba(255, 255, 255, .72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+        .table-row {
+            transition: all .25s ease;
+        }
+        .table-row:hover {
+            background: #f8fafc;
+            transform: scale(1.005);
+        }
+        .animate-fade {
+            animation: fade .4s ease;
+        }
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            } to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media(max-width:768px) {
+            aside {
+                display: none;
+            }
+            .mobile-padding {
+                padding: 20px !important;
+            }
+            header {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <div id="sidebar-container"></div>
+        <script>
+            fetch('sidebar.html').then(r => r.text()).then(html => {
+                document.getElementById('sidebar-container').innerHTML = html;
+            });
+        </script>
+
+        <main class="flex-1 h-full overflow-y-auto relative scroll-smooth">
+
+            <header
+                class="glass border-b border-white/40 px-10 py-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900">Data Nasabah</h1>
+                    <p class="text-slate-500 font-medium text-sm mt-1">👥 Daftar nasabah Bank Sampah Suryo Mandiri RW 10</p>
+                </div>
+            </header>
+
+            <div class="p-8 md:p-10 max-w-[1400px] mx-auto space-y-6 mobile-padding">
+                <!-- TABEL -->
+                <div
+                    class="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[28px] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-slate-800">Daftar Nasabah</h2>
+                        <button onclick="bukaModal()"
+                            class="bg-gradient-to-r from-green-500 to-emerald-400 text-white font-semibold px-6 py-2.5 rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+                            + Tambah Nasabah
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50/50 border-b border-slate-100">
+                                <tr>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">No</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">Nama Nasabah</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">RT</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">RW</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">Keterangan Wilayah</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600">Tanggal Daftar</th>
+                                    <th class="py-5 px-6 font-semibold text-sm text-slate-600 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-warga" class="divide-y divide-slate-100/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL TAMBAH/EDIT -->
+    <div id="modal-warga"
+        class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="glass rounded-[32px] p-8 w-full max-w-md shadow-2xl border border-white/30 animate-fade">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-title" class="text-2xl font-black text-slate-800">Tambah Nasabah</h2>
+                <button onclick="tutupModal()"
+                    class="w-10 h-10 rounded-full bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center text-xl font-bold transition-colors">×</button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="font-semibold text-sm text-slate-700">Nama Lengkap</label>
+                    <input type="text" id="input-nama" placeholder="Nama nasabah..."
+                        class="w-full mt-2 bg-white/70 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all font-medium text-slate-700">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-semibold text-sm text-slate-700">RT (opsional)</label>
+                        <input type="text" id="input-rt" placeholder="Misal: 34"
+                            class="w-full mt-2 bg-white/70 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all font-medium text-slate-700">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-sm text-slate-700">RW (opsional)</label>
+                        <input type="text" id="input-rw" placeholder="Misal: 10"
+                            class="w-full mt-2 bg-white/70 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all font-medium text-slate-700">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-semibold text-sm text-slate-700">Keterangan Wilayah (opsional)</label>
+                    <input type="text" id="input-wilayah" placeholder="Misal: RW09, Luar Wilayah..."
+                        class="w-full mt-2 bg-white/70 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all font-medium text-slate-700">
+                </div>
+            </div>
+            <button onclick="simpanWarga()"
+                class="mt-6 w-full bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-600 hover:to-emerald-500 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all duration-300">
+                Simpan
+            </button>
+        </div>
+    </div>
+
+    <script src="./src/js/notif-badge.js"></script>
+    <script src="./src/lib/sweetalert2.all.min.js"></script>
+    <script>
+        const API = '/api/nasabah';
+
+        async function loadWarga() {
+            try {
+                const res = await fetch(API);
+                const data = await res.json();
+                const tbody = document.getElementById('tabel-warga');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-slate-500">Belum ada data nasabah.</td></tr>';
+                    return;
+                }
+
+                // Pengelompokan nasabah
+                const groups = {};
+                data.forEach(item => {
+                    const isRW10 = item.rw && item.rw.trim() === '10';
+                    const rt = item.rt ? item.rt.trim() : '';
+                    
+                    let groupName = 'Lain-Lain';
+                    if (isRW10 && rt) {
+                        groupName = `RT ${rt}`;
+                    }
+                    
+                    if (!groups[groupName]) {
+                        groups[groupName] = [];
+                    }
+                    groups[groupName].push(item);
+                });
+
+                // Urutkan nama grup (RT numerik dahulu, Lain-Lain di paling bawah)
+                const groupNames = Object.keys(groups).sort((a, b) => {
+                    if (a === 'Lain-Lain') return 1;
+                    if (b === 'Lain-Lain') return -1;
+                    const numA = parseInt(a.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(b.replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+
+                groupNames.forEach(groupName => {
+                    // Sort secara alfabetis nama warga dalam grup, letakkan akun kas/khusus paling bawah
+                    groups[groupName].sort((a, b) => {
+                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                        const isASpecial = specialNames.includes(a.nama);
+                        const isBSpecial = specialNames.includes(b.nama);
+                        if (isASpecial && !isBSpecial) return 1;
+                        if (!isASpecial && isBSpecial) return -1;
+                        if (isASpecial && isBSpecial) {
+                            return specialNames.indexOf(a.nama) - specialNames.indexOf(b.nama);
+                        }
+                        return a.nama.localeCompare(b.nama);
+                    });
+
+                    // Sisipkan baris header pembatas RT/Kelompok
+                    tbody.innerHTML += `
+                        <tr class="bg-slate-100/50 font-bold text-slate-700 text-xs uppercase tracking-wider select-none">
+                            <td colspan="7" class="py-3 px-6 border-y border-slate-200/60">${groupName} — ${groups[groupName].length} Nasabah</td>
+                        </tr>
+                    `;
+
+                    let idx = 1;
+                    groups[groupName].forEach(item => {
+                        const rtVal = item.rt || '-';
+                        const rwVal = item.rw || '-';
+                        const wilayahVal = item.keterangan_wilayah || '-';
+                        const tanggalDaftar = item.tanggal_daftar ? new Date(item.tanggal_daftar).toLocaleDateString('id-ID') : '-';
+
+                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                        const isSpecial = specialNames.includes(item.nama);
+                        const noDisplay = isSpecial ? '#' : idx++;
+
+                        tbody.innerHTML += `
+                            <tr class="table-row">
+                                <td class="py-4 px-6 text-slate-500 font-bold text-sm">${noDisplay}</td>
+                                <td class="py-4 px-6 font-semibold text-slate-800 text-sm">
+                                    <a href="detail_nasabah.html?id=${item.id}" class="hover:text-emerald-600 hover:underline transition-colors">${item.nama}</a>
+                                </td>
+                                <td class="py-4 px-6 text-sm text-slate-600">${rtVal}</td>
+                                <td class="py-4 px-6 text-sm text-slate-600">${rwVal}</td>
+                                <td class="py-4 px-6 text-sm text-slate-600">${wilayahVal}</td>
+                                <td class="py-4 px-6 text-sm text-slate-600">${tanggalDaftar}</td>
+                                <td class="py-4 px-6 text-center">
+                                    <div class="flex gap-2 justify-center">
+                                        <a href="detail_nasabah.html?id=${item.id}" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 font-medium text-xs transition-colors flex items-center gap-1">
+                                            👁️ Detail
+                                        </a>
+                                        <button onclick="editWarga(${item.id}, '${item.nama.replace(/'/g, "\\'")}', '${rtVal}', '${rwVal}', '${wilayahVal}')" class="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 font-medium text-xs transition-colors">
+                                            ✏️ Edit
+                                        </button>
+                                        <button onclick="hapusWarga(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 font-medium text-xs transition-colors">
+                                            🗑️ Hapus
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function bukaModal(reset = true) {
+            if (reset) {
+                document.getElementById('edit-id').value = '';
+                document.getElementById('input-nama').value = '';
+                document.getElementById('input-rt').value = '';
+                document.getElementById('input-rw').value = '';
+                document.getElementById('input-wilayah').value = '';
+                document.getElementById('modal-title').innerText = 'Tambah Nasabah';
+            }
+            const modal = document.getElementById('modal-warga');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function tutupModal() {
+            const modal = document.getElementById('modal-warga');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function editWarga(id, nama, rt, rw, wilayah) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('input-nama').value = nama;
+            document.getElementById('input-rt').value = rt !== '-' ? rt : '';
+            document.getElementById('input-rw').value = rw !== '-' ? rw : '';
+            document.getElementById('input-wilayah').value = wilayah !== '-' ? wilayah : '';
+            document.getElementById('modal-title').innerText = 'Edit Nasabah';
+            bukaModal(false);
+        }
+
+        async function simpanWarga() {
+            const id = document.getElementById('edit-id').value;
+            const nama = document.getElementById('input-nama').value.trim();
+            const rt = document.getElementById('input-rt').value.trim();
+            const rw = document.getElementById('input-rw').value.trim();
+            const keterangan_wilayah = document.getElementById('input-wilayah').value.trim();
+
+            if (!nama) {
+                return Swal.fire({
+                    title: 'Peringatan!',
+                    text: 'Nama wajib diisi!',
+                    icon: 'warning',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API}/${id}` : API;
+
+            const payload = { nama, rt, rw, keterangan_wilayah };
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: id ? 'Data nasabah berhasil diperbarui.' : 'Data nasabah berhasil ditambahkan.',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981'
+                    });
+                    tutupModal();
+                    loadWarga();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Gagal menyimpan data: ' + (errData.error || res.statusText),
+                        icon: 'error',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Tidak bisa terhubung ke server.',
+                    icon: 'error',
+                    confirmButtonColor: '#10b981'
+                });
+            }
+        }
+
+        function hapusWarga(id) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: 'Data nasabah ini akan dihapus secara permanen!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: 'Data nasabah berhasil dihapus.',
+                                icon: 'success',
+                                confirmButtonColor: '#10b981'
+                            });
+                            loadWarga();
+                        } else {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: 'Gagal menghapus data nasabah.',
+                                icon: 'error',
+                                confirmButtonColor: '#10b981'
+                            });
+                        }
+                    } catch (err) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Tidak bisa terhubung ke server.',
+                            icon: 'error',
+                            confirmButtonColor: '#10b981'
+                        });
+                    }
+                }
+            });
+        }
+
+        document.getElementById('modal-warga').addEventListener('click', function (e) {
+            if (e.target === this) tutupModal();
+        });
+
+        document.addEventListener('DOMContentLoaded', loadWarga);
+    </script>
+</body>
+
+</html>
