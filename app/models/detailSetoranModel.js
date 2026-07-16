@@ -39,4 +39,12 @@ const remove = (id, callback) => {
     db.query('DELETE FROM detail_setoran WHERE id = ?', [id], callback);
 };
 
-module.exports = { findAll, create, update, remove };
+const getById = (id, callback) => {
+    db.query('SELECT id_nasabah, tanggal FROM detail_setoran WHERE id = ?', [id], (err, rows) => {
+        if (err) return callback(err);
+        if (rows.length === 0) return callback(null, null);
+        callback(null, rows[0]);
+    });
+};
+
+module.exports = { findAll, create, update, remove, getById };

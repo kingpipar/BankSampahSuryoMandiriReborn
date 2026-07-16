@@ -16,9 +16,14 @@ const createDetailSetoran = (req, res) => {
     if (!id_nasabah || !id_harga_sampah || !jumlah_kg) {
         return res.status(400).json({ success: false, message: 'Nasabah, jenis sampah, dan jumlah berat wajib diisi!' });
     }
-    DetailSetoran.create({ id_nasabah, id_harga_sampah, jumlah_kg: parseFloat(jumlah_kg), tanggal, keterangan }, (err) => {
+    const tgl = tanggal || new Date().toISOString().slice(0, 10);
+    DetailSetoran.create({ id_nasabah, id_harga_sampah, jumlah_kg: parseFloat(jumlah_kg), tanggal: tgl, keterangan }, (err) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ success: true, message: 'Setoran harian berhasil ditambahkan' });
+        
+        SetoranNasabah.syncRekap(id_nasabah, tgl, (syncErr) => {
+            if (syncErr) console.error('Gagal sinkronisasi rekap:', syncErr);
+            res.status(201).json({ success: true, message: 'Setoran harian berhasil ditambahkan' });
+        });
     });
 };
 
@@ -27,16 +32,47 @@ const updateDetailSetoran = (req, res) => {
     if (!id_nasabah || !id_harga_sampah || !jumlah_kg) {
         return res.status(400).json({ success: false, message: 'Nasabah, jenis sampah, dan jumlah berat wajib diisi!' });
     }
-    DetailSetoran.update(req.params.id, { id_nasabah, id_harga_sampah, jumlah_kg: parseFloat(jumlah_kg), tanggal, keterangan }, (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: 'Setoran harian berhasil diperbarui' });
+    const tgl = tanggal || new Date().toISOString().slice(0, 10);
+    const id = req.params.id;
+
+    DetailSetoran.getById(id, (findErr, transaction) => {
+        if (findErr) return res.status(500).json({ error: findErr.message });
+        if (!transaction) return res.status(404).json({ success: false, message: 'Transaksi tidak ditemukan' });
+
+        const oldNasabah = transaction.id_nasabah;
+        const oldTanggal = transaction.tanggal;
+
+        DetailSetoran.update(id, { id_nasabah, id_harga_sampah, jumlah_kg: parseFloat(jumlah_kg), tanggal: tgl, keterangan }, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            SetoranNasabah.syncRekap(oldNasabah, oldTanggal, (err1) => {
+                if (err1) console.error('Gagal sinkronisasi rekap lama:', err1);
+                SetoranNasabah.syncRekap(id_nasabah, tgl, (err2) => {
+                    if (err2) console.error('Gagal sinkronisasi rekap baru:', err2);
+                    res.json({ success: true, message: 'Setoran harian berhasil diperbarui' });
+                });
+            });
+        });
     });
 };
 
 const deleteDetailSetoran = (req, res) => {
-    DetailSetoran.remove(req.params.id, (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: 'Setoran harian berhasil dihapus' });
+    const id = req.params.id;
+    DetailSetoran.getById(id, (findErr, transaction) => {
+        if (findErr) return res.status(500).json({ error: findErr.message });
+        if (!transaction) return res.status(404).json({ success: false, message: 'Transaksi tidak ditemukan' });
+
+        const nasabahId = transaction.id_nasabah;
+        const tanggalStr = transaction.tanggal;
+
+        DetailSetoran.remove(id, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            SetoranNasabah.syncRekap(nasabahId, tanggalStr, (syncErr) => {
+                if (syncErr) console.error('Gagal sinkronisasi rekap setelah hapus:', syncErr);
+                res.json({ success: true, message: 'Setoran harian berhasil dihapus' });
+            });
+        });
     });
 };
 

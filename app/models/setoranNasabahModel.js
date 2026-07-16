@@ -20,10 +20,10 @@ const findByPeriode = (periode, callback) => {
                     (SELECT s.saldo_akhir FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND s.periode < STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d') ORDER BY s.periode DESC LIMIT 1),
                     0
                 ) AS saldo_awal,
-                -- 2. Saldo Kotor (Dari rekap bulan ini, atau hitung dari detail harian)
+                -- 2. Saldo Kotor (Dahulukan hitungan dinamis dari detail_setoran harian, fallback ke rekap tersimpan, lalu 0)
                 COALESCE(
-                    (SELECT s.saldo_kotor FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND DATE_FORMAT(s.periode, '%Y-%m') = ? LIMIT 1),
                     (SELECT SUM(d.jumlah_kg * h.harga) FROM detail_setoran d JOIN harga_sampah h ON d.id_harga_sampah = h.id WHERE d.id_nasabah = n.id AND DATE_FORMAT(d.tanggal, '%Y-%m') = ?),
+                    (SELECT s.saldo_kotor FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND DATE_FORMAT(s.periode, '%Y-%m') = ? LIMIT 1),
                     0
                 ) AS saldo_kotor,
                 -- 3. Jumlah Ambil
@@ -67,4 +67,71 @@ const update = (id, { saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status
     `, [saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status, id], callback);
 };
 
-module.exports = { findByPeriode, create, update };
+const syncRekap = (idNasabah, dateStr, callback) => {
+    let year, month;
+    if (dateStr instanceof Date) {
+        year = dateStr.getFullYear();
+        month = String(dateStr.getMonth() + 1).padStart(2, '0');
+    } else {
+        const parts = String(dateStr).split('-');
+        if (parts.length >= 2) {
+            year = parts[0];
+            month = parts[1];
+        } else {
+            const d = new Date(dateStr);
+            year = d.getFullYear();
+            month = String(d.getMonth() + 1).padStart(2, '0');
+        }
+    }
+    const periodeMonth = `${year}-${month}`; // 'YYYY-MM'
+    const periodeDay = `${periodeMonth}-01`; // 'YYYY-MM-01'
+
+    // 1. Cek apakah rekap sudah ada di setoran_nasabah
+    db.query(
+        'SELECT id, saldo_awal, jumlah_ambil FROM setoran_nasabah WHERE id_nasabah = ? AND periode = ?',
+        [idNasabah, periodeDay],
+        (err, rows) => {
+            if (err) return callback(err);
+            if (rows.length === 0) {
+                // Rekap belum dibuat untuk bulan ini, tidak perlu disinkronkan
+                return callback(null);
+            }
+
+            const rekap = rows[0];
+
+            // Ambil nama nasabah untuk membedakan Kas Bank Sampah
+            db.query('SELECT nama FROM nasabah WHERE id = ?', [idNasabah], (nasabahErr, nasabahRows) => {
+                if (nasabahErr) return callback(nasabahErr);
+                if (nasabahRows.length === 0) return callback(new Error('Nasabah tidak ditemukan'));
+
+                const isKasBankSampah = nasabahRows[0].nama === 'Kas Bank Sampah';
+
+                // 2. Hitung jumlah saldo_kotor baru dari detail_setoran harian
+                db.query(
+                    `SELECT COALESCE(SUM(d.jumlah_kg * h.harga), 0) AS total_kotor 
+                     FROM detail_setoran d 
+                     JOIN harga_sampah h ON d.id_harga_sampah = h.id 
+                     WHERE d.id_nasabah = ? AND DATE_FORMAT(d.tanggal, '%Y-%m') = ?`,
+                    [idNasabah, periodeMonth],
+                    (err, sumRows) => {
+                        if (err) return callback(err);
+                        const newKotor = parseFloat(sumRows[0].total_kotor || 0);
+                        const saldoAwal = parseFloat(rekap.saldo_awal || 0);
+                        const jumlahAmbil = parseFloat(rekap.jumlah_ambil || 0);
+                        const netSetoran = isKasBankSampah ? newKotor : newKotor * 0.90;
+                        const newSaldoAkhir = saldoAwal + netSetoran - jumlahAmbil;
+
+                        // 3. Update setoran_nasabah
+                        db.query(
+                            'UPDATE setoran_nasabah SET saldo_kotor = ?, saldo_akhir = ? WHERE id = ?',
+                            [newKotor, newSaldoAkhir, rekap.id],
+                            callback
+                        );
+                    }
+                );
+            });
+        }
+    );
+};
+
+module.exports = { findByPeriode, create, update, syncRekap };
