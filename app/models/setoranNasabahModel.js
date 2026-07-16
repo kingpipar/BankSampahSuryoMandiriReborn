@@ -5,7 +5,7 @@ const findByPeriode = (periode, callback) => {
     const query = `
         SELECT 
             t.id_nasabah, t.nama_nasabah, t.rt, t.rw, t.keterangan_wilayah,
-            t.saldo_awal, t.saldo_kotor, t.jumlah_ambil, t.status,
+            t.saldo_awal, t.saldo_kotor, t.jumlah_ambil, t.status, t.tanggal_ambil,
             COALESCE(t.saldo_akhir_rekap, (t.saldo_awal + (t.saldo_kotor * IF(t.nama_nasabah = 'Kas Bank Sampah', 1.00, 0.90)) - t.jumlah_ambil)) AS saldo_akhir
         FROM (
             SELECT 
@@ -37,34 +37,38 @@ const findByPeriode = (periode, callback) => {
                     'DITABUNG'
                 ) AS status,
                 -- 5. Saldo Akhir Rekap (jika sudah ada rekap di database)
-                (SELECT s.saldo_akhir FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND DATE_FORMAT(s.periode, '%Y-%m') = ? LIMIT 1) AS saldo_akhir_rekap
+                (SELECT s.saldo_akhir FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND DATE_FORMAT(s.periode, '%Y-%m') = ? LIMIT 1) AS saldo_akhir_rekap,
+                -- 6. Tanggal Ambil
+                (SELECT s.tanggal_ambil FROM setoran_nasabah s WHERE s.id_nasabah = n.id AND DATE_FORMAT(s.periode, '%Y-%m') = ? LIMIT 1) AS tanggal_ambil
             FROM nasabah n
         ) t
         ORDER BY t.nama_nasabah ASC
     `;
-    db.query(query, [periode, periode, periode, periode, periode, periode, periode], callback);
+    db.query(query, [periode, periode, periode, periode, periode, periode, periode, periode], callback);
 };
 
 const create = ({ id_nasabah, periode, saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status }, callback) => {
     db.query(`
         INSERT INTO setoran_nasabah 
-            (id_nasabah, periode, saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+            (id_nasabah, periode, saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status, tanggal_ambil)
+        VALUES (?, ?, ?, ?, ?, ?, ?, IF(? > 0, CURRENT_DATE(), NULL))
         ON DUPLICATE KEY UPDATE
             saldo_awal = VALUES(saldo_awal),
             saldo_kotor = VALUES(saldo_kotor),
             jumlah_ambil = VALUES(jumlah_ambil),
             saldo_akhir = VALUES(saldo_akhir),
-            status = VALUES(status)
-    `, [id_nasabah, periode, saldo_awal || 0, saldo_kotor || 0, jumlah_ambil || 0, saldo_akhir || 0, status || 'DITABUNG'], callback);
+            status = VALUES(status),
+            tanggal_ambil = IF(VALUES(jumlah_ambil) > 0, COALESCE(tanggal_ambil, CURRENT_DATE()), NULL)
+    `, [id_nasabah, periode, saldo_awal || 0, saldo_kotor || 0, jumlah_ambil || 0, saldo_akhir || 0, status || 'DITABUNG', jumlah_ambil || 0], callback);
 };
 
 const update = (id, { saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status }, callback) => {
     db.query(`
         UPDATE setoran_nasabah
-        SET saldo_awal = ?, saldo_kotor = ?, jumlah_ambil = ?, saldo_akhir = ?, status = ?
+        SET saldo_awal = ?, saldo_kotor = ?, jumlah_ambil = ?, saldo_akhir = ?, status = ?,
+            tanggal_ambil = IF(? > 0, COALESCE(tanggal_ambil, CURRENT_DATE()), NULL)
         WHERE id = ?
-    `, [saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status, id], callback);
+    `, [saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status, jumlah_ambil || 0, id], callback);
 };
 
 const syncRekap = (idNasabah, dateStr, callback) => {
