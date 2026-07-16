@@ -14,30 +14,24 @@ Pastikan perangkat Anda sudah terpasang:
 
 ## 💻 Langkah Instalasi
 
-### 1. Ekspor & Import Database
-1. Buka **phpMyAdmin** atau tool database manager Anda lainnya.
-2. Buat database baru dengan nama `bssmr`.
-3. Import file database yang berada di path berikut:
-   `backend/config/bssmr.sql`
-
-### 2. Konfigurasi Environment (`.env`)
+### 1. Konfigurasi Environment (`.env`)
 Sesuaikan file `.env` di dalam folder `backend` jika konfigurasi MySQL Anda berbeda:
 ```env
-DB_NAME=bssmr
+DB_NAME=database bank sampah
 DB_USER=root
 DB_PASS=
 DB_HOST=localhost
 PORT=3000
 ```
 
-### 3. Instalasi Dependensi Backend
+### 2. Instalasi Dependensi Backend
 Buka PowerShell / Command Prompt, arahkan ke folder `backend`, lalu jalankan:
 ```bash
 cd backend
 npm install
 ```
 
-### 4. Instalasi & Kompilasi CSS Frontend (Tailwind Offline)
+### 3. Instalasi & Kompilasi CSS Frontend (Tailwind Offline)
 Aset CSS sudah dikompilasi secara lokal. Jika Anda ingin melakukan perubahan pada gaya tampilan (styling), instal dependensi frontend dan jalankan compiler:
 1. Buka terminal baru dan arahkan ke folder `frontend`.
 2. Jalankan instalasi:
