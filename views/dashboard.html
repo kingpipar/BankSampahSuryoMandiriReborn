@@ -347,6 +347,9 @@
 
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+                doc.setProperties({
+                    title: `Laporan Setoran Pengepul - ${formattedPeriode}`
+                });
 
                 // Header Dokumen
                 doc.setFont('Helvetica', 'bold');
@@ -456,14 +459,19 @@
                 doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
 
-                // Kolom Kiri - Direktur (Center X = 45)
-                doc.text('DIREKTUR BS SMR RW 10', 45, sigY, { align: 'center' });
-                doc.text('(                                         )', 45, sigY + 28, { align: 'center' });
+                // Kolom Kiri - Penanggung Jawab Pengepul (Center X = 45)
+                doc.text('PENANGGUNG JAWAB PENGEPUL', 45, sigY, { align: 'center' });
+                doc.text('(                                         )', 45, sigY + 24, { align: 'center' });
 
-                // Kolom Kanan - Bendahara & Tanggal (Center X = 155)
+                // Kolom Kanan - Bendahara (Center X = 155)
                 doc.text(`YOGYAKARTA, ${formattedPeriode}`, 155, sigY, { align: 'center' });
-                doc.text('BENDAHARA:', 155, sigY + 5, { align: 'center' });
-                doc.text('(                                         )', 155, sigY + 28, { align: 'center' });
+                doc.text('BENDAHARA', 155, sigY + 5, { align: 'center' });
+                doc.text('(                                         )', 155, sigY + 24, { align: 'center' });
+
+                // Kolom Tengah Bawah - Direktur (Center X = 105)
+                doc.text('MENGETAHUI,', 105, sigY + 35, { align: 'center' });
+                doc.text('DIREKTUR BS SMR RW 10', 105, sigY + 40, { align: 'center' });
+                doc.text('(                                         )', 105, sigY + 62, { align: 'center' });
 
                 // Tampilkan preview PDF di tab baru daripada langsung download otomatis
                 const pdfUrl = doc.output('bloburl');

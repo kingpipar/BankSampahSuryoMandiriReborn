@@ -4,38 +4,43 @@
     <meta charset="UTF-8">
     <title>Laporan Keuangan Nasabah | Bank Sampah Digital</title>
     <style>
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+        }
         @page {
             size: A4 portrait;
-            margin: 5mm 8mm;
+            margin: 3mm 6mm;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 6.8pt;
+            font-size: 5.6pt;
             color: #1e293b;
             margin: 0;
             padding: 0;
             background: #fff;
-            line-height: 1.15;
+            line-height: 1.05;
         }
         header {
             text-align: center;
-            margin-bottom: 3.5mm;
+            margin-bottom: 1.5mm;
         }
         header h1 {
-            font-size: 9.5pt;
+            font-size: 8.5pt;
             font-weight: 900;
-            margin: 0 0 1mm 0;
+            margin: 0 0 0.5mm 0;
             color: #0f172a;
             letter-spacing: 0.2px;
         }
         header h2 {
-            font-size: 8.5pt;
+            font-size: 7.5pt;
             font-weight: 800;
-            margin: 0 0 1mm 0;
+            margin: 0 0 0.5mm 0;
             color: #1e293b;
         }
         header p {
-            font-size: 7.5pt;
+            font-size: 6.5pt;
             font-weight: 700;
             margin: 0;
             color: #475569;
@@ -43,19 +48,22 @@
         }
         table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
-            margin-bottom: 2.5mm;
+            margin-bottom: 1.5mm;
             border: 1px solid #475569;
         }
         th, td {
             border: 1px solid #475569;
-            padding: 0.85mm 1.1mm;
+            padding: 0.4mm 0.8mm;
             vertical-align: middle;
+            font-size: 5.2pt;
+            letter-spacing: -0.2px;
         }
         th {
             font-weight: 900;
             text-align: center;
-            font-size: 6.5pt;
+            font-size: 5.2pt;
             text-transform: uppercase;
             background-color: #fef08a; /* Default Yellow Header */
         }
@@ -65,10 +73,10 @@
         .font-black { font-weight: 900; }
         
         /* Group Headers */
-        .group-rt-34 { background-color: #f97316 !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
-        .group-rt-35 { background-color: #f59e0b !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
-        .group-rt-36 { background-color: #0d9488 !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
-        .group-lain { background-color: #2563eb !important; color: #fff !important; font-weight: 900; font-size: 7pt; }
+        .group-rt-34 { background-color: #f97316 !important; color: #fff !important; font-weight: 900; font-size: 6pt; }
+        .group-rt-35 { background-color: #f59e0b !important; color: #fff !important; font-weight: 900; font-size: 6pt; }
+        .group-rt-36 { background-color: #0d9488 !important; color: #fff !important; font-weight: 900; font-size: 6pt; }
+        .group-lain { background-color: #2563eb !important; color: #fff !important; font-weight: 900; font-size: 6pt; }
         
         /* Special Rows */
         .row-kas-bank { background-color: #ffedd5 !important; font-weight: bold; }
@@ -109,9 +117,82 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+        
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 10px 20px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid #047857;
+            margin-bottom: 5mm;
+        }
+        .btn-print {
+            background-color: white;
+            color: #059669;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+        .btn-print:hover {
+            background-color: #f0fdf4;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+        }
+        .btn-close {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        .btn-close:hover {
+            background: rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
+    <div class="action-bar no-print">
+        <span style="letter-spacing: 0.3px;">📄 Laporan Keuangan Nasabah (A4 Portrait)</span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn-print" onclick="window.print()">
+                🖨️ Cetak / Simpan PDF
+            </button>
+            <button class="btn-close" onclick="window.close()">
+                Tutup
+            </button>
+        </div>
+    </div>
+
     <div id="loader">
         <div class="spinner"></div>
         <div>Menyiapkan Laporan Keuangan...</div>
@@ -126,19 +207,19 @@
     <table>
         <thead>
             <tr>
-                <th rowspan="2" style="width: 25px;">NO.</th>
-                <th rowspan="2" style="width: 130px;">NAMA NASABAH</th>
-                <th rowspan="2" style="width: 75px;" id="header-saldo-awal">SALDO AWAL</th>
+                <th rowspan="2" style="width: 2.5%;">NO.</th>
+                <th rowspan="2" style="width: 14%;">NAMA NASABAH</th>
+                <th rowspan="2" style="width: 10.5%;" id="header-saldo-awal">SALDO AWAL</th>
                 <th colspan="3" id="header-setoran-smr">SETORAN BS-SMR</th>
-                <th rowspan="2" style="width: 75px;">SALDO BERSIH<br>AKHIR (1)</th>
-                <th rowspan="2" style="width: 75px;">DIAMBIL/<br>DITABUNG</th>
-                <th rowspan="2" style="width: 65px;">JUMLAH<br>AMBIL</th>
-                <th rowspan="2" style="width: 75px;">SALDO BERSIH<br>AKHIR (2)</th>
+                <th rowspan="2" style="width: 10.5%;">SALDO BERSIH<br>AKHIR (1)</th>
+                <th rowspan="2" style="width: 7.5%;">DIAMBIL/<br>DITABUNG</th>
+                <th rowspan="2" style="width: 10.5%;">JUMLAH<br>AMBIL</th>
+                <th rowspan="2" style="width: 11%;">SALDO BERSIH<br>AKHIR (2)</th>
             </tr>
             <tr>
-                <th style="width: 75px;" id="header-tgl-setoran">-</th>
-                <th style="width: 50px;">10%</th>
-                <th style="width: 65px;">NETTO</th>
+                <th style="width: 12%;" id="header-tgl-setoran">-</th>
+                <th style="width: 10.5%;">10%</th>
+                <th style="width: 11%;">NETTO</th>
             </tr>
         </thead>
         <tbody id="report-body">
@@ -188,7 +269,9 @@
                 // Set Header Labels
                 const targetMonthIndex = parseInt(rawPeriode.split('-')[1]) - 1;
                 const targetYear = rawPeriode.split('-')[0];
-                document.getElementById('label-periode').innerText = `PERIODE: ${MONTH_NAMES[targetMonthIndex]} ${targetYear}`;
+                const monthName = MONTH_NAMES[targetMonthIndex];
+                document.title = `Laporan Keuangan Nasabah - ${monthName} ${targetYear}`;
+                document.getElementById('label-periode').innerText = `PERIODE: ${monthName} ${targetYear}`;
                 
                 // Header Saldo Awal (Bulan Lalu)
                 const prevMonthDate = new Date(targetYear, targetMonthIndex - 1, 1);
@@ -457,7 +540,7 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td class="text-right font-black" style="font-size: 8pt;">${Math.round(finalTotalBendahara).toLocaleString('id-ID')}</td>
+                        <td class="text-right font-black">${Math.round(finalTotalBendahara).toLocaleString('id-ID')}</td>
                     </tr>
                 `;
 
