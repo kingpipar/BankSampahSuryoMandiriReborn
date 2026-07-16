@@ -107,12 +107,14 @@
                     <form id="form-setoran" onsubmit="simpanSetoran(event)">
                         <input type="hidden" id="edit-id">
                         <div class="space-y-4">
-                            <div id="wrapper-nasabah">
+                            <div id="wrapper-nasabah" class="relative">
                                 <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Nasabah</label>
-                                <select id="input-nasabah" required
+                                <input type="hidden" id="input-nasabah" required>
+                                <input type="text" id="search-nasabah" placeholder="Ketik nama nasabah untuk mencari..." autocomplete="off" required
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
-                                    <option value="" disabled selected>Pilih nama nasabah...</option>
-                                </select>
+                                 <div id="dropdown-nasabah-list" style="overscroll-behavior: contain;" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto hidden z-50 animate-fade">
+                                     <!-- Populated dynamically -->
+                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Jenis Sampah</label>
@@ -236,6 +238,7 @@
             const wrapperKeterangan = document.getElementById('wrapper-keterangan');
             const wrapperNasabah = document.getElementById('wrapper-nasabah');
             const inputNasabah = document.getElementById('input-nasabah');
+            const searchNasabah = document.getElementById('search-nasabah');
 
             if (tujuan === 'PENGEPUL') {
                 tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
@@ -243,6 +246,7 @@
                 wrapperKeterangan.style.display = 'block';
                 wrapperNasabah.style.display = 'block';
                 inputNasabah.required = true;
+                searchNasabah.required = true;
             } else {
                 tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
                 tabWargaEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
@@ -251,21 +255,134 @@
                 wrapperNasabah.style.display = 'none';
                 inputNasabah.required = false;
                 inputNasabah.value = ''; // Set value to empty (will be saved as null in db)
+                searchNasabah.required = false;
+                searchNasabah.value = '';
             }
             // Otomatis ubah filter riwayat agar sinkron
             setTujuanFilter(tujuan);
         }
 
+        let allNasabahData = [];
+
         async function loadDropdowns() {
             try {
                 // Populate Nasabah Dropdown
                 const resNasabah = await fetch('/api/nasabah');
-                const nasabah = await resNasabah.json();
+                allNasabahData = await resNasabah.json();
+                
+                const dropdownList = document.getElementById('dropdown-nasabah-list');
                 const selectNasabah = document.getElementById('input-nasabah');
-                selectNasabah.innerHTML = '<option value="" disabled selected>Pilih nama nasabah...</option>';
-                nasabah.sort((a, b) => a.nama.localeCompare(b.nama)).forEach(n => {
-                    const addr = n.rt && n.rw ? ` (RT ${n.rt}/RW ${n.rw})` : '';
-                    selectNasabah.innerHTML += `<option value="${n.id}">${n.nama}${addr}</option>`;
+                const searchInput = document.getElementById('search-nasabah');
+                
+                dropdownList.innerHTML = '';
+                
+                // Group nasabah by RT/RW
+                const groups = {};
+                allNasabahData.forEach(n => {
+                    const isRW10 = n.rw && n.rw.toString().trim() === '10';
+                    const rt = n.rt ? n.rt.toString().trim() : '';
+                    let groupName = 'Lain-Lain';
+                    if (isRW10 && rt) {
+                        groupName = `RT ${rt}`;
+                    }
+                    if (!groups[groupName]) {
+                        groups[groupName] = [];
+                    }
+                    groups[groupName].push(n);
+                });
+
+                // Sort group names
+                const groupNames = Object.keys(groups).sort((a, b) => {
+                    if (a === 'Lain-Lain') return 1;
+                    if (b === 'Lain-Lain') return -1;
+                    const numA = parseInt(a.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(b.replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+
+                groupNames.forEach(groupName => {
+                    groups[groupName].sort((a, b) => {
+                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                        const isASpecial = specialNames.includes(a.nama);
+                        const isBSpecial = specialNames.includes(b.nama);
+                        if (isASpecial && !isBSpecial) return 1;
+                        if (!isASpecial && isBSpecial) return -1;
+                        if (isASpecial && isBSpecial) {
+                            return specialNames.indexOf(a.nama) - specialNames.indexOf(b.nama);
+                        }
+                        return a.nama.localeCompare(b.nama);
+                    });
+
+                    // Create container for grouping
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'dropdown-group-container';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'dropdown-group-header px-4 py-1.5 text-[10px] font-black tracking-wider text-slate-400 bg-slate-50 border-y border-slate-100 uppercase select-none';
+                    header.textContent = `${groupName} — ${groups[groupName].length} Nasabah`;
+                    groupContainer.appendChild(header);
+
+                    groups[groupName].forEach(n => {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item px-5 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors font-medium';
+                        item.dataset.id = n.id;
+                        item.dataset.name = n.nama;
+                        item.textContent = n.nama;
+                        item.addEventListener('click', () => {
+                            selectNasabah.value = n.id;
+                            searchInput.value = n.nama;
+                            dropdownList.classList.add('hidden');
+                        });
+                        groupContainer.appendChild(item);
+                    });
+
+                    dropdownList.appendChild(groupContainer);
+                });
+
+                // Input & Focus events
+                searchInput.addEventListener('focus', () => {
+                    dropdownList.classList.remove('hidden');
+                    // Reset filter on focus
+                    document.querySelectorAll('.dropdown-item').forEach(item => item.style.display = 'block');
+                    document.querySelectorAll('.dropdown-group-header').forEach(header => header.style.display = 'block');
+                    document.querySelectorAll('.dropdown-group-container').forEach(container => container.style.display = 'block');
+                });
+
+                searchInput.addEventListener('input', (e) => {
+                    const searchVal = e.target.value.toLowerCase();
+                    if (!searchVal) {
+                        selectNasabah.value = '';
+                    }
+                    dropdownList.classList.remove('hidden');
+                    
+                    document.querySelectorAll('.dropdown-item').forEach(item => {
+                        const name = item.dataset.name.toLowerCase();
+                        if (name.includes(searchVal)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    document.querySelectorAll('.dropdown-group-container').forEach(container => {
+                        const visibleItems = container.querySelectorAll('.dropdown-item[style="display: block;"]');
+                        const header = container.querySelector('.dropdown-group-header');
+                        if (visibleItems.length > 0) {
+                            header.style.display = 'block';
+                            container.style.display = 'block';
+                        } else {
+                            header.style.display = 'none';
+                            container.style.display = 'none';
+                        }
+                    });
+                });
+
+                // Close dropdown on click outside
+                document.addEventListener('click', (e) => {
+                    const wrapper = document.getElementById('wrapper-nasabah');
+                    if (wrapper && !wrapper.contains(e.target)) {
+                        dropdownList.classList.add('hidden');
+                    }
                 });
 
                 // Populate Sampah Dropdown
@@ -371,6 +488,17 @@
             
             let keterangan = document.getElementById('input-keterangan').value.trim();
             const tujuan = document.getElementById('tujuan-setoran').value;
+            
+            if (tujuan === 'PENGEPUL' && !id_nasabah) {
+                Swal.fire({
+                    title: 'Nasabah Belum Dipilih!',
+                    text: 'Silakan klik dan pilih nama nasabah yang muncul pada daftar pencarian.',
+                    icon: 'warning',
+                    confirmButtonColor: '#10b981'
+                });
+                return;
+            }
+
             if (tujuan === 'WARGA') {
                 keterangan = 'DIBELI WARGA';
             }
@@ -436,6 +564,10 @@
             setTujuanSetoran(tujuan || 'PENGEPUL');
             if (tujuan === 'WARGA') {
                 document.getElementById('input-nasabah').value = '';
+                document.getElementById('search-nasabah').value = '';
+            } else if (id_nasabah) {
+                const found = allNasabahData.find(n => n.id === parseInt(id_nasabah));
+                document.getElementById('search-nasabah').value = found ? found.nama : '';
             }
             document.getElementById('form-title').innerText = 'Form Edit Setoran';
         }
