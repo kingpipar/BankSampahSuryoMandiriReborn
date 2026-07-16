@@ -55,7 +55,7 @@ const getHistory = (id, callback) => {
             if (err) return callback(err);
 
             db.query(`
-                SELECT periode, saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status
+                SELECT periode, saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status, tanggal_ambil
                 FROM setoran_nasabah
                 WHERE id_nasabah = ?
                 ORDER BY periode DESC

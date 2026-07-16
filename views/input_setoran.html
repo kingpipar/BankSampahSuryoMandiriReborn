@@ -100,7 +100,7 @@
                     <form id="form-setoran" onsubmit="simpanSetoran(event)">
                         <input type="hidden" id="edit-id">
                         <div class="space-y-4">
-                            <div>
+                            <div id="wrapper-nasabah">
                                 <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Nasabah</label>
                                 <select id="input-nasabah" required
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
@@ -227,16 +227,23 @@
             const tabWargaEl = document.getElementById('tab-warga');
             const inputKeterangan = document.getElementById('input-keterangan');
             const wrapperKeterangan = document.getElementById('wrapper-keterangan');
+            const wrapperNasabah = document.getElementById('wrapper-nasabah');
+            const inputNasabah = document.getElementById('input-nasabah');
 
             if (tujuan === 'PENGEPUL') {
                 tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
                 tabWargaEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
                 wrapperKeterangan.style.display = 'block';
+                wrapperNasabah.style.display = 'block';
+                inputNasabah.required = true;
             } else {
                 tabPengepulEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
                 tabWargaEl.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-600 shadow-sm";
                 wrapperKeterangan.style.display = 'none'; // Keterangan disembunyikan karena otomatis diset DIBELI WARGA
                 inputKeterangan.value = '';
+                wrapperNasabah.style.display = 'none';
+                inputNasabah.required = false;
+                inputNasabah.value = ''; // Set value to empty (will be saved as null in db)
             }
             // Otomatis ubah filter riwayat agar sinkron
             setTujuanFilter(tujuan);
@@ -336,7 +343,7 @@
                         <td class="py-4 px-5 text-slate-500 font-medium text-center text-sm">${index + 1}</td>
                         <td class="py-4 px-5 text-slate-600 text-xs font-semibold">${dateFormatted}</td>
                         <td class="py-4 px-5 font-bold text-slate-800 text-sm">
-                            <a href="detail_nasabah.html?id=${group.id_nasabah}" class="hover:text-emerald-600 hover:underline transition-colors">${group.nama_nasabah}</a>
+                            ${filterTujuan === 'WARGA' ? '<span class="text-slate-700">Warga</span>' : `<a href="detail_nasabah.html?id=${group.id_nasabah}" class="hover:text-emerald-600 hover:underline transition-colors">${group.nama_nasabah}</a>`}
                         </td>
                         <td class="py-4 px-5">${itemsHtml}</td>
                     </tr>
@@ -362,7 +369,7 @@
             }
 
             const payload = {
-                id_nasabah: parseInt(id_nasabah),
+                id_nasabah: id_nasabah ? parseInt(id_nasabah) : null,
                 id_harga_sampah: parseInt(id_harga_sampah),
                 jumlah_kg: parseFloat(jumlah_kg),
                 tanggal,
@@ -414,12 +421,15 @@
 
         function editSetoran(id, id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan, tujuan) {
             document.getElementById('edit-id').value = id;
-            document.getElementById('input-nasabah').value = id_nasabah;
+            document.getElementById('input-nasabah').value = id_nasabah || '';
             document.getElementById('input-sampah').value = id_harga_sampah;
             document.getElementById('input-berat').value = jumlah_kg;
             document.getElementById('input-tanggal').value = tanggal ? tanggal : new Date().toISOString().slice(0, 10);
             document.getElementById('input-keterangan').value = keterangan === 'DIBELI WARGA' ? '' : keterangan;
             setTujuanSetoran(tujuan || 'PENGEPUL');
+            if (tujuan === 'WARGA') {
+                document.getElementById('input-nasabah').value = '';
+            }
             document.getElementById('form-title').innerText = 'Form Edit Setoran';
         }
 

@@ -6,7 +6,7 @@ const findAll = (periode, callback) => {
                n.nama AS nama_nasabah, n.rt, n.rw,
                h.nama_sampah, h.harga, h.satuan, (d.jumlah_kg * h.harga) AS total_harga
         FROM detail_setoran d
-        JOIN nasabah n ON d.id_nasabah = n.id
+        LEFT JOIN nasabah n ON d.id_nasabah = n.id
         JOIN harga_sampah h ON d.id_harga_sampah = h.id
     `;
     const params = [];
@@ -22,7 +22,7 @@ const findAll = (periode, callback) => {
 const create = ({ id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan }, callback) => {
     db.query(
         'INSERT INTO detail_setoran (id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan) VALUES (?, ?, ?, ?, ?)',
-        [id_nasabah, id_harga_sampah, jumlah_kg, tanggal || new Date().toISOString().slice(0, 10), keterangan || null],
+        [id_nasabah || null, id_harga_sampah, jumlah_kg, tanggal || new Date().toISOString().slice(0, 10), keterangan || null],
         callback
     );
 };
@@ -32,7 +32,7 @@ const update = (id, { id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keteranga
         UPDATE detail_setoran
         SET id_nasabah = ?, id_harga_sampah = ?, jumlah_kg = ?, tanggal = ?, keterangan = ?
         WHERE id = ?
-    `, [id_nasabah, id_harga_sampah, jumlah_kg, tanggal || new Date().toISOString().slice(0, 10), keterangan || null, id], callback);
+    `, [id_nasabah || null, id_harga_sampah, jumlah_kg, tanggal || new Date().toISOString().slice(0, 10), keterangan || null, id], callback);
 };
 
 const remove = (id, callback) => {

@@ -13,8 +13,11 @@ const getDetailSetoran = (req, res) => {
 
 const createDetailSetoran = (req, res) => {
     const { id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan } = req.body;
-    if (!id_nasabah || !id_harga_sampah || !jumlah_kg) {
-        return res.status(400).json({ success: false, message: 'Nasabah, jenis sampah, dan jumlah berat wajib diisi!' });
+    if (!id_harga_sampah || !jumlah_kg) {
+        return res.status(400).json({ success: false, message: 'Jenis sampah dan jumlah berat wajib diisi!' });
+    }
+    if (keterangan !== 'DIBELI WARGA' && !id_nasabah) {
+        return res.status(400).json({ success: false, message: 'Nasabah wajib diisi!' });
     }
     const tgl = tanggal || new Date().toISOString().slice(0, 10);
     DetailSetoran.create({ id_nasabah, id_harga_sampah, jumlah_kg: parseFloat(jumlah_kg), tanggal: tgl, keterangan }, (err) => {
@@ -29,8 +32,11 @@ const createDetailSetoran = (req, res) => {
 
 const updateDetailSetoran = (req, res) => {
     const { id_nasabah, id_harga_sampah, jumlah_kg, tanggal, keterangan } = req.body;
-    if (!id_nasabah || !id_harga_sampah || !jumlah_kg) {
-        return res.status(400).json({ success: false, message: 'Nasabah, jenis sampah, dan jumlah berat wajib diisi!' });
+    if (!id_harga_sampah || !jumlah_kg) {
+        return res.status(400).json({ success: false, message: 'Jenis sampah dan jumlah berat wajib diisi!' });
+    }
+    if (keterangan !== 'DIBELI WARGA' && !id_nasabah) {
+        return res.status(400).json({ success: false, message: 'Nasabah wajib diisi!' });
     }
     const tgl = tanggal || new Date().toISOString().slice(0, 10);
     const id = req.params.id;

@@ -365,11 +365,12 @@
                         }
 
                         timeline.push({
-                            tanggal: rec.periode,
+                            tanggal: rec.tanggal_ambil || rec.periode,
                             tipe: 'PENARIKAN',
                             keterangan: dateLabel,
                             total: -value,
-                            keteranganTambahan: ketTambahan
+                            keteranganTambahan: ketTambahan,
+                            hasExactDate: !!rec.tanggal_ambil
                         });
                     }
                 }
@@ -413,8 +414,14 @@
                         if (item.tanggal) {
                             const d = new Date(item.tanggal);
                             if (!isNaN(d.getTime())) {
-                                if (item.tipe === 'PENARIKAN' || item.isRekap) {
+                                if (item.isRekap) {
                                     dateFormatted = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                                } else if (item.tipe === 'PENARIKAN') {
+                                    if (item.hasExactDate) {
+                                        dateFormatted = d.toLocaleDateString('id-ID');
+                                    } else {
+                                        dateFormatted = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                                    }
                                 } else {
                                     dateFormatted = d.toLocaleDateString('id-ID');
                                 }

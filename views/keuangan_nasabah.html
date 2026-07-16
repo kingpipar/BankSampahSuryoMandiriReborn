@@ -191,6 +191,7 @@
             // Pengelompokan nasabah
             const groups = {};
             dataKeuangan.forEach(row => {
+                if (row.nama_nasabah === 'Kas Bank Sampah') return;
                 const isRW10 = row.rw && row.rw.toString().trim() === '10';
                 const rt = row.rt ? row.rt.toString().trim() : '';
                 
@@ -237,6 +238,7 @@
 
                 let idx = 1;
                 groups[groupName].forEach(row => {
+                    if (row.nama_nasabah === 'Kas Bank Sampah') return;
                     const saldoAwal = parseFloat(row.saldo_awal || 0);
                     const saldoKotor = parseFloat(row.saldo_kotor || 0);
                     const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';

@@ -68,6 +68,7 @@ const update = (id, { saldo_awal, saldo_kotor, jumlah_ambil, saldo_akhir, status
 };
 
 const syncRekap = (idNasabah, dateStr, callback) => {
+    if (!idNasabah) return callback(null);
     let year, month;
     if (dateStr instanceof Date) {
         year = dateStr.getFullYear();
