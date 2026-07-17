@@ -45,6 +45,110 @@ const getHistory = (id, callback) => {
 
         const nasabah = nasabahRes[0];
 
+        if (nasabah.nama === 'Kas Administrasi 10%') {
+            // Kalkulasi rekap bulanan Kas Administrasi 10% secara dinamis
+            db.query(`
+                SELECT 
+                    DATE_FORMAT(periode, '%Y-%m') AS monthStr,
+                    COALESCE(SUM(saldo_kotor * 0.10), 0) AS total_admin
+                FROM setoran_nasabah
+                WHERE id_nasabah NOT IN (SELECT id FROM nasabah WHERE nama IN ('Kas Bank Sampah', 'Kas Administrasi 10%'))
+                GROUP BY monthStr
+                ORDER BY monthStr ASC
+            `, (err, adminRows) => {
+                if (err) return callback(err);
+
+                db.query(`
+                    SELECT 
+                        DATE_FORMAT(periode, '%Y-%m') AS monthStr,
+                        saldo_awal,
+                        jumlah_ambil,
+                        saldo_akhir,
+                        status,
+                        tanggal_ambil,
+                        periode
+                    FROM setoran_nasabah
+                    WHERE id_nasabah = ?
+                    ORDER BY periode ASC
+                `, [id], (err, withdrawRows) => {
+                    if (err) return callback(err);
+
+                    const now = new Date();
+                    let maxYear = now.getFullYear();
+                    let maxMonth = now.getMonth();
+
+                    // Pastikan mencakup data uji masa depan jika ada
+                    adminRows.forEach(r => {
+                        const parts = r.monthStr.split('-');
+                        const y = parseInt(parts[0]);
+                        const m = parseInt(parts[1]) - 1;
+                        if (y > maxYear || (y === maxYear && m > maxMonth)) {
+                            maxYear = y;
+                            maxMonth = m;
+                        }
+                    });
+
+                    withdrawRows.forEach(r => {
+                        const parts = r.monthStr.split('-');
+                        const y = parseInt(parts[0]);
+                        const m = parseInt(parts[1]) - 1;
+                        if (y > maxYear || (y === maxYear && m > maxMonth)) {
+                            maxYear = y;
+                            maxMonth = m;
+                        }
+                    });
+
+                    const startYear = 2026;
+                    const startMonth = 5; // June (0-based: 5)
+
+                    let tempY = startYear;
+                    let tempM = startMonth;
+
+                    let prevSaldoAkhir = 1971929; // Saldo awal bawaan Juni 2026
+                    const rekap = [];
+
+                    while (tempY < maxYear || (tempY === maxYear && tempM <= maxMonth)) {
+                        const mStr = `${tempY}-${String(tempM + 1).padStart(2, '0')}`;
+                        const periodeDay = `${mStr}-01`;
+
+                        const adminRow = adminRows.find(r => r.monthStr === mStr);
+                        const monthAdmin = adminRow ? parseFloat(adminRow.total_admin) : 0;
+
+                        const wRow = withdrawRows.find(r => r.monthStr === mStr);
+                        const wAmbil = wRow ? parseFloat(wRow.jumlah_ambil) : 0;
+                        const wStatus = wRow ? wRow.status : (wAmbil > 0 ? 'DIAMBIL' : 'DITABUNG');
+                        const wTanggal = wRow ? wRow.tanggal_ambil : null;
+
+                        const saldoAwal = prevSaldoAkhir;
+                        const saldoKotor = 0;
+                        const saldoAkhir = saldoAwal + monthAdmin - wAmbil;
+
+                        rekap.push({
+                            periode: periodeDay,
+                            saldo_awal: saldoAwal,
+                            saldo_kotor: saldoKotor,
+                            jumlah_ambil: wAmbil,
+                            saldo_akhir: saldoAkhir,
+                            status: wStatus,
+                            tanggal_ambil: wTanggal
+                        });
+
+                        prevSaldoAkhir = saldoAkhir;
+
+                        tempM++;
+                        if (tempM > 11) {
+                            tempM = 0;
+                            tempY++;
+                        }
+                    }
+
+                    rekap.reverse(); // Terbaru di atas
+                    callback(null, { nasabah, deposits: [], rekap });
+                });
+            });
+            return;
+        }
+
         db.query(`
             SELECT d.id, d.tanggal, d.jumlah_kg, h.nama_sampah, h.harga, (d.jumlah_kg * h.harga) AS total, h.satuan, d.keterangan
             FROM detail_setoran d

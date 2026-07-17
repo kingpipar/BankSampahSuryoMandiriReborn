@@ -198,7 +198,7 @@
             // Pengelompokan nasabah
             const groups = {};
             dataKeuangan.forEach(row => {
-                if (row.nama_nasabah === 'Kas Bank Sampah') return;
+                if (row.nama_nasabah === 'Kas Bank Sampah' || row.nama_nasabah === 'Kas Administrasi 10%') return;
                 const isRW10 = row.rw && row.rw.toString().trim() === '10';
                 const rt = row.rt ? row.rt.toString().trim() : '';
                 
@@ -225,7 +225,7 @@
             groupNames.forEach(groupName => {
                 // Sort secara alfabetis nama warga dalam grup, letakkan akun kas/khusus paling bawah
                 groups[groupName].sort((a, b) => {
-                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
                     const isASpecial = specialNames.includes(a.nama_nasabah);
                     const isBSpecial = specialNames.includes(b.nama_nasabah);
                     if (isASpecial && !isBSpecial) return 1;
@@ -372,6 +372,7 @@
             let totalAwal = 0, totalKotor = 0, totalAdmin = 0, totalAmbil = 0, totalAkhir = 0;
 
             dataKeuangan.forEach(row => {
+                if (row.nama_nasabah === 'Kas Administrasi 10%') return;
                 const sa = parseFloat(row.saldo_awal || 0);
                 const sk = parseFloat(row.saldo_kotor || 0);
                 const isKasBankSampah = row.nama_nasabah === 'Kas Bank Sampah';

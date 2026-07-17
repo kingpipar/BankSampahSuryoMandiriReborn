@@ -302,11 +302,15 @@
                         if (resPrev.ok) {
                             const prevData = await resPrev.json();
                             // Sum admin 10% of citizens
-                            prevData.forEach(row => {
-                                if (row.id_nasabah != 64 && row.id_nasabah != 65 && row.id_nasabah != 66) {
-                                    prevAdminAccumulated += parseFloat(row.saldo_kotor || 0) * 0.10;
-                                }
-                            });
+                             prevData.forEach(row => {
+                                 const isSpecial = row.nama_nasabah === 'Kas Bank Sampah' || row.nama_nasabah === 'Kas RW 10' || row.nama_nasabah === 'Remaja RW10 SYD' || row.nama_nasabah === 'Kas Administrasi 10%';
+                                 if (!isSpecial) {
+                                     prevAdminAccumulated += parseFloat(row.saldo_kotor || 0) * 0.10;
+                                 }
+                                 if (row.nama_nasabah === 'Kas Administrasi 10%') {
+                                     prevAdminAccumulated -= parseFloat(row.jumlah_ambil || 0);
+                                 }
+                             });
                         }
                     } catch (e) {
                         console.error(`Gagal menghitung admin untuk bulan ${monthStr}:`, e);
@@ -329,8 +333,10 @@
                 };
 
                 data.forEach(row => {
+                    if (row.nama_nasabah === 'Kas Administrasi 10%') return; // Lewati kas admin operasional
+                    
                     // Cek apakah akun khusus
-                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                    const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
                     const isSpecial = specialNames.includes(row.nama_nasabah);
 
                     if (isSpecial) {
@@ -353,7 +359,7 @@
                 });
 
                 // Urutkan nasabah dalam setiap grup secara alfabetis (akun khusus paling bawah)
-                const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
                 Object.keys(groups).forEach(gName => {
                     groups[gName].sort((a, b) => {
                         const isASpecial = specialNames.includes(a.nama_nasabah);
@@ -486,8 +492,15 @@
                     </tr>
                 `;
 
+                // Cari rekap khusus Kas Administrasi 10% untuk bulan ini
+                const kasAdminRow = data.find(r => r.nama_nasabah === 'Kas Administrasi 10%');
+                const kasAdminAmbil = kasAdminRow ? parseFloat(kasAdminRow.jumlah_ambil || 0) : 0;
+
                 // Row B: ADMINISTRASI 10%
                 const totalAdminAccumulated = prevAdminAccumulated + sumAdminWarga;
+                const finalAdminEnding = totalAdminAccumulated - kasAdminAmbil;
+                const statusB = kasAdminAmbil > 0 ? 'DIAMBIL' : 'DITABUNG';
+
                 tbody.innerHTML += `
                     <tr class="sum-b">
                         <td class="text-center font-black">B</td>
@@ -497,9 +510,9 @@
                         <td class="text-right font-black">${Math.round(sumAdminWarga).toLocaleString('id-ID')}</td>
                         <td></td>
                         <td class="text-right font-black">${Math.round(totalAdminAccumulated).toLocaleString('id-ID')}</td>
-                        <td class="text-center font-black">DITABUNG</td>
-                        <td class="text-right font-black">0</td>
-                        <td class="text-right font-black">${Math.round(totalAdminAccumulated).toLocaleString('id-ID')}</td>
+                        <td class="text-center font-black">${statusB}</td>
+                        <td class="text-right font-black">${Math.round(kasAdminAmbil).toLocaleString('id-ID')}</td>
+                        <td class="text-right font-black">${Math.round(finalAdminEnding).toLocaleString('id-ID')}</td>
                     </tr>
                 `;
 
@@ -528,7 +541,7 @@
 
                 // Row D: TOTAL UANG YANG DIPEGANG BENDAHARA
                 const previousTotalBendahara = prevAdminAccumulated + rowCSaldoAwal;
-                const finalTotalBendahara = totalAdminAccumulated + rowCAkhir2;
+                const finalTotalBendahara = finalAdminEnding + rowCAkhir2;
 
                 tbody.innerHTML += `
                     <tr class="sum-d">

@@ -279,6 +279,7 @@
                 // Group nasabah by RT/RW
                 const groups = {};
                 allNasabahData.forEach(n => {
+                    if (n.nama === 'Kas Administrasi 10%') return;
                     const isRW10 = n.rw && n.rw.toString().trim() === '10';
                     const rt = n.rt ? n.rt.toString().trim() : '';
                     let groupName = 'Lain-Lain';

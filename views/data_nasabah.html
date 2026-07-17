@@ -212,7 +212,7 @@
                 groupNames.forEach(groupName => {
                     // Sort secara alfabetis nama warga dalam grup, letakkan akun kas/khusus paling bawah
                     groups[groupName].sort((a, b) => {
-                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
                         const isASpecial = specialNames.includes(a.nama);
                         const isBSpecial = specialNames.includes(b.nama);
                         if (isASpecial && !isBSpecial) return 1;
@@ -237,7 +237,7 @@
                         const wilayahVal = item.keterangan_wilayah || '-';
                         const tanggalDaftar = item.tanggal_daftar ? new Date(item.tanggal_daftar).toLocaleDateString('id-ID') : '-';
 
-                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD'];
+                        const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
                         const isSpecial = specialNames.includes(item.nama);
                         const noDisplay = isSpecial ? '#' : idx++;
 

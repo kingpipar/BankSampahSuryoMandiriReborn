@@ -131,10 +131,10 @@
                                 <span class="text-slate-500 font-medium">Total Setoran Kotor</span>
                                 <span id="rekening-kotor" class="font-bold text-slate-800">Rp 0</span>
                             </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium">Bagi Hasil / Pot. Admin (10%)</span>
-                                <span id="rekening-admin" class="font-bold text-rose-500">Rp 0</span>
-                            </div>
+                             <div class="flex justify-between items-center text-sm">
+                                 <span id="rekening-admin-label" class="text-slate-500 font-medium">Bagi Hasil / Pot. Admin (10%)</span>
+                                 <span id="rekening-admin" class="font-bold text-rose-500">Rp 0</span>
+                             </div>
                             <div class="flex justify-between items-center text-sm" id="row-saldo-bersih">
                                 <span class="text-slate-500 font-medium">Jumlah Saldo Bersih</span>
                                 <span id="rekening-bersih" class="font-bold text-emerald-600">Rp 0</span>
@@ -243,13 +243,16 @@
                 document.getElementById('warga-nama').innerText = rawData.nasabah.nama;
                 const rtVal = rawData.nasabah.rt && rawData.nasabah.rw ? `RT ${rawData.nasabah.rt} / RW ${rawData.nasabah.rw}` : (rawData.nasabah.keterangan_wilayah || '-');
                 document.getElementById('warga-wilayah').innerText = rtVal;
-                document.getElementById('warga-id').innerText = '#' + rawData.nasabah.id;
+                const specialNames = ['Kas Bank Sampah', 'Kas RW 10', 'Remaja RW10 SYD', 'Kas Administrasi 10%'];
+                const isSpecial = specialNames.includes(rawData.nasabah.nama);
+                document.getElementById('warga-id').innerText = isSpecial ? '#' : '#' + rawData.nasabah.id;
                 document.getElementById('warga-daftar').innerText = rawData.nasabah.tanggal_daftar ? new Date(rawData.nasabah.tanggal_daftar).toLocaleDateString('id-ID') : '-';
 
-                // Tampilkan card penarikan hanya untuk Kas Bank Sampah
+                // Tampilkan card penarikan hanya untuk Kas Bank Sampah & Kas Administrasi 10%
                 const isKasBank = rawData.nasabah.nama === 'Kas Bank Sampah';
-                document.getElementById('card-penarikan').style.display = isKasBank ? 'block' : 'none';
-                document.getElementById('wrapper-keterangan-penarikan').style.display = isKasBank ? 'block' : 'none';
+                const isKasAdmin = rawData.nasabah.nama === 'Kas Administrasi 10%';
+                document.getElementById('card-penarikan').style.display = (isKasBank || isKasAdmin) ? 'block' : 'none';
+                document.getElementById('wrapper-keterangan-penarikan').style.display = (isKasBank || isKasAdmin) ? 'block' : 'none';
                 document.getElementById('penarikan-periode').value = new Date().toISOString().slice(0, 7);
 
                 // Tampilkan semua data secara default
@@ -468,26 +471,50 @@
 
             // 4. Render Balance Sheet
             const isKasBankSampah = rawData.nasabah && rawData.nasabah.nama === 'Kas Bank Sampah';
-            const totalAdmin = isKasBankSampah ? 0 : totalKotor * 0.10;
-            const totalBersih = isKasBankSampah ? totalKotor : totalKotor * 0.90;
+            const isKasAdmin = rawData.nasabah && rawData.nasabah.nama === 'Kas Administrasi 10%';
+            
+            const totalAdmin = (isKasBankSampah || isKasAdmin) ? 0 : totalKotor * 0.10;
+            const totalBersih = isKasBankSampah ? totalKotor : (isKasAdmin ? 0 : totalKotor * 0.90);
             
             const rowSaldoAwal = document.getElementById('row-saldo-awal');
             const labelSaldoAkhir = document.getElementById('label-saldo-akhir');
+            const adminLabelEl = document.getElementById('rekening-admin-label');
+            const adminValueEl = document.getElementById('rekening-admin');
+            const bersihRow = document.getElementById('row-saldo-bersih');
+
+            if (isKasAdmin) {
+                adminLabelEl.innerText = 'Pemasukan Admin 10%';
+                adminValueEl.className = 'font-bold text-emerald-600';
+                bersihRow.style.display = 'none'; // Sembunyikan baris saldo bersih karena kotor=0
+            } else {
+                adminLabelEl.innerText = 'Bagi Hasil / Pot. Admin (10%)';
+                adminValueEl.className = 'font-bold text-rose-500';
+                bersihRow.style.display = 'flex';
+            }
 
             if (selectedPeriode) {
                 rowSaldoAwal.style.display = 'flex';
                 document.getElementById('rekening-awal-label').innerText = `Rp ${Math.round(saldoAwalVal).toLocaleString('id-ID')}`;
                 labelSaldoAkhir.innerText = 'Saldo Akhir Bulan';
                 
-                if (!hasMonthRekap) {
-                    saldoAkhirVal = saldoAwalVal + totalBersih - totalDitarik;
+                if (isKasAdmin) {
+                    // Dapatkan pemasukan admin 10% bulan ini secara dinamis dari rekap
+                    const totalAdminIncome = matchedRekap ? (parseFloat(matchedRekap.saldo_akhir) - parseFloat(matchedRekap.saldo_awal) + parseFloat(matchedRekap.jumlah_ambil)) : 0;
+                    
+                    document.getElementById('rekening-kotor').innerText = 'Rp 0';
+                    adminValueEl.innerText = `Rp ${Math.round(totalAdminIncome).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(totalDitarik).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(saldoAkhirVal).toLocaleString('id-ID')}`;
+                } else {
+                    if (!hasMonthRekap) {
+                        saldoAkhirVal = saldoAwalVal + totalBersih - totalDitarik;
+                    }
+                    document.getElementById('rekening-kotor').innerText = `Rp ${Math.round(totalKotor).toLocaleString('id-ID')}`;
+                    adminValueEl.innerText = `- Rp ${Math.round(totalAdmin).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-bersih').innerText = `Rp ${Math.round(totalBersih).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(totalDitarik).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(saldoAkhirVal).toLocaleString('id-ID')}`;
                 }
-                
-                document.getElementById('rekening-kotor').innerText = `Rp ${Math.round(totalKotor).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-admin').innerText = `- Rp ${Math.round(totalAdmin).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-bersih').innerText = `Rp ${Math.round(totalBersih).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(totalDitarik).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(saldoAkhirVal).toLocaleString('id-ID')}`;
             } else {
                 // Hitung saldo awal mula-mula (dari rekap tertua)
                 const sortedRekapAsc = [...rawData.rekap].sort((a, b) => new Date(a.periode) - new Date(b.periode));
@@ -504,26 +531,42 @@
                 });
 
                 let allTimeKotor = 0;
-                rawData.deposits.forEach(d => {
-                    allTimeKotor += parseFloat(d.total || 0);
-                });
-                rawData.rekap.forEach(r => {
-                    const rMonth = r.periode ? getYearMonthStr(r.periode) : '';
-                    const hasDeps = rawData.deposits.some(d => d.tanggal && getYearMonthStr(d.tanggal) === rMonth);
-                    if (!hasDeps) {
-                        allTimeKotor += parseFloat(r.saldo_kotor || 0);
-                    }
-                });
+                if (!isKasAdmin) {
+                    rawData.deposits.forEach(d => {
+                        allTimeKotor += parseFloat(d.total || 0);
+                    });
+                    rawData.rekap.forEach(r => {
+                        const rMonth = r.periode ? getYearMonthStr(r.periode) : '';
+                        const hasDeps = rawData.deposits.some(d => d.tanggal && getYearMonthStr(d.tanggal) === rMonth);
+                        if (!hasDeps) {
+                            allTimeKotor += parseFloat(r.saldo_kotor || 0);
+                        }
+                    });
+                }
 
-                const allTimeAdmin = isKasBankSampah ? 0 : allTimeKotor * 0.10;
-                const allTimeBersih = isKasBankSampah ? allTimeKotor : allTimeKotor * 0.90;
-                const allTimeAkhir = earliestSaldoAwal + allTimeBersih - allTimeDitarik;
+                if (isKasAdmin) {
+                    let allTimeAdminIncome = 0;
+                    rawData.rekap.forEach(r => {
+                        allTimeAdminIncome += (parseFloat(r.saldo_akhir) - parseFloat(r.saldo_awal) + parseFloat(r.jumlah_ambil));
+                    });
 
-                document.getElementById('rekening-kotor').innerText = `Rp ${Math.round(allTimeKotor).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-admin').innerText = `- Rp ${Math.round(allTimeAdmin).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-bersih').innerText = `Rp ${Math.round(allTimeBersih).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(allTimeDitarik).toLocaleString('id-ID')}`;
-                document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(allTimeAkhir).toLocaleString('id-ID')}`;
+                    const allTimeAkhir = earliestSaldoAwal + allTimeAdminIncome - allTimeDitarik;
+
+                    document.getElementById('rekening-kotor').innerText = 'Rp 0';
+                    adminValueEl.innerText = `Rp ${Math.round(allTimeAdminIncome).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(allTimeDitarik).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(allTimeAkhir).toLocaleString('id-ID')}`;
+                } else {
+                    const allTimeAdmin = isKasBankSampah ? 0 : allTimeKotor * 0.10;
+                    const allTimeBersih = isKasBankSampah ? allTimeKotor : allTimeKotor * 0.90;
+                    const allTimeAkhir = earliestSaldoAwal + allTimeBersih - allTimeDitarik;
+
+                    document.getElementById('rekening-kotor').innerText = `Rp ${Math.round(allTimeKotor).toLocaleString('id-ID')}`;
+                    adminValueEl.innerText = `- Rp ${Math.round(allTimeAdmin).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-bersih').innerText = `Rp ${Math.round(allTimeBersih).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-ditarik').innerText = `- Rp ${Math.round(allTimeDitarik).toLocaleString('id-ID')}`;
+                    document.getElementById('rekening-akhir').innerText = `Rp ${Math.round(allTimeAkhir).toLocaleString('id-ID')}`;
+                }
             }
         }
 
@@ -568,7 +611,13 @@
             }
 
             const isKasBank = rawData.nasabah.nama === 'Kas Bank Sampah';
-            const netSetoran = isKasBank ? saldoKotor : (saldoKotor * 0.90);
+            const isKasAdmin = rawData.nasabah.nama === 'Kas Administrasi 10%';
+            
+            let netSetoran = isKasBank ? saldoKotor : (saldoKotor * 0.90);
+            if (isKasAdmin) {
+                netSetoran = matchedRec ? (parseFloat(matchedRec.saldo_akhir) - parseFloat(matchedRec.saldo_awal) + parseFloat(matchedRec.jumlah_ambil)) : 0;
+            }
+            
             const maxAvailable = saldoAwal + netSetoran;
 
             if (valJumlah > maxAvailable) {
@@ -596,8 +645,8 @@
                 status: currentStatus === 'DITABUNG' ? 'DIAMBIL' : currentStatus
             };
 
-            // Simpan keterangan ke LocalStorage jika diisi (khusus untuk Kas Bank Sampah)
-            if (isKasBank && valKet) {
+            // Simpan keterangan ke LocalStorage jika diisi (khusus untuk Kas Bank Sampah & Kas Administrasi 10%)
+            if ((isKasBank || isKasAdmin) && valKet) {
                 localStorage.setItem(`bank_sampah_penarikan_keterangan_${valPeriode}`, valKet);
             }
 
