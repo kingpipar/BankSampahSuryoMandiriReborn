@@ -453,20 +453,21 @@
                 const kasBankRow = data.find(r => r.nama_nasabah === 'Kas Bank Sampah');
                 const kasBankAwal = kasBankRow ? parseFloat(kasBankRow.saldo_awal || 0) : 92954;
                 const kasBankKotor = kasBankRow ? parseFloat(kasBankRow.saldo_kotor || 0) : 62320;
-                const kasBankAmbil = kasBankRow ? parseFloat(kasBankRow.jumlah_ambil || 0) : 150000;
+                const kasBankAmbil = kasBankRow ? parseFloat(kasBankRow.jumlah_ambil || 0) : 0;
                 
                 // Cari rekap Kas RW 10 & Remaja
                 const kasRwRow = data.find(r => r.nama_nasabah === 'Kas RW 10');
                 const kasRwAwal = kasRwRow ? parseFloat(kasRwRow.saldo_awal || 0) : 64107;
+                const kasRwAmbil = kasRwRow ? parseFloat(kasRwRow.jumlah_ambil || 0) : 0;
                 
                 const remajaRow = data.find(r => r.nama_nasabah === 'Remaja RW10 SYD');
                 const remajaAwal = remajaRow ? parseFloat(remajaRow.saldo_awal || 0) : 72540;
+                const remajaAmbil = remajaRow ? parseFloat(remajaRow.jumlah_ambil || 0) : 0;
 
                 // Total rekap bersih warga + special accounts (Kas Bank Sampah, Kas RW 10, Remaja)
-                // Saldo Awal (Juni 2026 = 12.849.803 warga + 92.954 KasBS + 64.107 KasRW + 72.540 Remaja = 13.079.404)
                 const totalAwalGrand = sumAwalWarga + kasBankAwal + kasRwAwal + remajaAwal;
                 const totalAkhir1Grand = sumAkhir1Warga + (kasBankAwal + kasBankKotor) + kasRwAwal + remajaAwal;
-                const totalAkhir2Grand = sumAkhir2Warga + (kasBankAwal + kasBankKotor - kasBankAmbil) + kasRwAwal + remajaAwal;
+                const totalAkhir2Grand = sumAkhir2Warga + (kasBankAwal + kasBankKotor - kasBankAmbil) + (kasRwAwal - kasRwAmbil) + (remajaAwal - remajaAmbil);
 
                 // Row A: TOTAL PENDAPATAN KOTOR NASABAH
                 const rowAKotor = sumKotorWarga + kasBankKotor;
@@ -506,7 +507,7 @@
                 const rowCSaldoAwal = sumAwalWarga + kasBankAwal + kasRwAwal + remajaAwal;
                 const rowCNetto = sumNettoWarga + kasBankKotor;
                 const rowCAkhir1 = rowCSaldoAwal + rowCNetto;
-                const rowCAmbil = sumAmbilWarga + kasBankAmbil;
+                const rowCAmbil = sumAmbilWarga + kasBankAmbil + kasRwAmbil + remajaAmbil;
                 const rowCAkhir2 = rowCAkhir1 - rowCAmbil;
                 const rowCStatus = rowCAmbil > 0 ? 'DIAMBIL' : 'DITABUNG';
 
